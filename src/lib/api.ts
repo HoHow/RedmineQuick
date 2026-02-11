@@ -101,12 +101,12 @@ export function listProjects(): Promise<Project[]> {
 }
 
 // Issues
-export function listMyIssues(): Promise<Issue[]> {
-  return invoke("list_my_issues");
+export function listMyIssues(status: string = "open"): Promise<Issue[]> {
+  return invoke("list_my_issues", { status });
 }
 
-export function listProjectIssues(projectId: number): Promise<Issue[]> {
-  return invoke("list_project_issues", { projectId });
+export function listProjectIssues(projectId: number, status: string = "open"): Promise<Issue[]> {
+  return invoke("list_project_issues", { projectId, status });
 }
 
 export function getIssue(issueId: number): Promise<Issue> {

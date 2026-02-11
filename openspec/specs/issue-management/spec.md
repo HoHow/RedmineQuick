@@ -1,22 +1,38 @@
 ## ADDED Requirements
 
 ### Requirement: 顯示我的待處理 Issue
-系統 SHALL 在主畫面（Dashboard）顯示所有指派給目前使用者且狀態為未關閉的 issue，跨所有專案。
+系統 SHALL 在主畫面（Dashboard）提供 tab 切換，讓使用者檢視「待處理」和「已完成」的 issue。
 
-#### Scenario: 載入待處理 issue
+#### Scenario: 預設顯示待處理 tab
 - **WHEN** 使用者進入主畫面
-- **THEN** 系統 SHALL 從 Redmine API 取得指派給我的未關閉 issue 列表，每筆顯示：主旨、專案名稱、追蹤標籤、狀態、優先權、完成百分比
+- **THEN** 系統 SHALL 預設選取「待處理」tab，顯示指派給目前使用者且狀態為未關閉的 issue 列表
+
+#### Scenario: 切換至已完成 tab
+- **WHEN** 使用者點擊「已完成」tab
+- **THEN** 系統 SHALL 顯示指派給目前使用者且狀態為已關閉的 issue 列表
 
 #### Scenario: 無待處理 issue
 - **WHEN** 使用者無任何指派的未關閉 issue
 - **THEN** 系統 SHALL 顯示空狀態提示訊息
 
-### Requirement: 顯示專案內 Issue 列表
-系統 SHALL 在專案 Issue 列表頁面顯示該專案下的所有 issue。
+#### Scenario: 無已完成 issue
+- **WHEN** 使用者無任何指派的已關閉 issue
+- **THEN** 系統 SHALL 顯示空狀態提示訊息
 
-#### Scenario: 載入專案 issue
+### Requirement: 顯示專案內 Issue 列表
+系統 SHALL 在專案 Issue 列表頁面提供狀態篩選，讓使用者依狀態檢視 issue。
+
+#### Scenario: 預設顯示未關閉 issue
 - **WHEN** 使用者進入某專案的 Issue 列表頁面
-- **THEN** 系統 SHALL 顯示該專案下的 issue 列表，每筆顯示：主旨、追蹤標籤、狀態、優先權、被分派者、完成百分比
+- **THEN** 系統 SHALL 預設選取「未關閉」篩選，顯示該專案下狀態為未關閉的 issue
+
+#### Scenario: 篩選已關閉 issue
+- **WHEN** 使用者點擊「已關閉」篩選按鈕
+- **THEN** 系統 SHALL 顯示該專案下狀態為已關閉的 issue
+
+#### Scenario: 篩選全部 issue
+- **WHEN** 使用者點擊「全部」篩選按鈕
+- **THEN** 系統 SHALL 顯示該專案下所有狀態的 issue
 
 ### Requirement: 查看 Issue 詳情
 系統 SHALL 提供 Issue 詳情頁面，顯示 issue 的完整資訊。

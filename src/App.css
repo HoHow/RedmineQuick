@@ -322,6 +322,52 @@ button:disabled {
   padding-bottom: 0.5rem;
 }
 
+/* Tab & filter groups */
+.tab-group,
+.filter-group {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0.8rem;
+}
+
+.tab-button,
+.filter-button {
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.tab-button:first-child,
+.filter-button:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.tab-button:last-child,
+.filter-button:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.tab-button + .tab-button,
+.filter-button + .filter-button {
+  border-left: none;
+}
+
+.tab-button.active,
+.filter-button.active {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+.tab-button:not(.active):hover,
+.filter-button:not(.active):hover {
+  background-color: var(--color-bg-tertiary);
+}
+
 /* Project list */
 .project-list {
   list-style: none;

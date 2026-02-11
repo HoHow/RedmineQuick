@@ -9,7 +9,9 @@ function ProjectIssuesPage() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const [issuesLoading, setIssuesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"open" | "closed" | "*">("open");
 
   useEffect(() => {
     async function fetchData() {
@@ -17,7 +19,7 @@ function ProjectIssuesPage() {
       const pid = Number(projectId);
       try {
         const [issueList, projects] = await Promise.all([
-          listProjectIssues(pid),
+          listProjectIssues(pid, "open"),
           listProjects(),
         ]);
         setIssues(issueList);
@@ -31,6 +33,15 @@ function ProjectIssuesPage() {
     }
     fetchData();
   }, [projectId]);
+
+  useEffect(() => {
+    if (loading || !projectId) return;
+    setIssuesLoading(true);
+    listProjectIssues(Number(projectId), statusFilter)
+      .then(setIssues)
+      .catch((e) => setError(String(e)))
+      .finally(() => setIssuesLoading(false));
+  }, [statusFilter]);
 
   if (loading) {
     return <div className="loading">載入中...</div>;
@@ -55,7 +66,30 @@ function ProjectIssuesPage() {
         </button>
       </div>
 
-      {issues.length === 0 ? (
+      <div className="filter-group">
+        <button
+          className={`filter-button ${statusFilter === "open" ? "active" : ""}`}
+          onClick={() => setStatusFilter("open")}
+        >
+          未關閉
+        </button>
+        <button
+          className={`filter-button ${statusFilter === "closed" ? "active" : ""}`}
+          onClick={() => setStatusFilter("closed")}
+        >
+          已關閉
+        </button>
+        <button
+          className={`filter-button ${statusFilter === "*" ? "active" : ""}`}
+          onClick={() => setStatusFilter("*")}
+        >
+          全部
+        </button>
+      </div>
+
+      {issuesLoading ? (
+        <div className="loading">載入中...</div>
+      ) : issues.length === 0 ? (
         <p className="empty-state">此專案目前沒有 Issue</p>
       ) : (
         <IssueList issues={issues} />

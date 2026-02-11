@@ -8,14 +8,16 @@ function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [myIssues, setMyIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
+  const [issuesLoading, setIssuesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"open" | "closed">("open");
 
   useEffect(() => {
     async function fetchData() {
       try {
         const [projectList, issueList] = await Promise.all([
           listProjects(),
-          listMyIssues(),
+          listMyIssues("open"),
         ]);
         setProjects(projectList);
         setMyIssues(issueList);
@@ -27,6 +29,15 @@ function DashboardPage() {
     }
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    setIssuesLoading(true);
+    listMyIssues(tab)
+      .then(setMyIssues)
+      .catch((e) => setError(String(e)))
+      .finally(() => setIssuesLoading(false));
+  }, [tab]);
 
   if (loading) {
     return <div className="loading">載入中...</div>;
@@ -60,9 +71,27 @@ function DashboardPage() {
         </section>
 
         <section className="panel">
-          <h2>我的待處理 Issue</h2>
-          {myIssues.length === 0 ? (
-            <p className="empty-state">目前沒有待處理的 Issue</p>
+          <h2>我的 Issue</h2>
+          <div className="tab-group">
+            <button
+              className={`tab-button ${tab === "open" ? "active" : ""}`}
+              onClick={() => setTab("open")}
+            >
+              待處理
+            </button>
+            <button
+              className={`tab-button ${tab === "closed" ? "active" : ""}`}
+              onClick={() => setTab("closed")}
+            >
+              已完成
+            </button>
+          </div>
+          {issuesLoading ? (
+            <div className="loading">載入中...</div>
+          ) : myIssues.length === 0 ? (
+            <p className="empty-state">
+              {tab === "open" ? "目前沒有待處理的 Issue" : "目前沒有已完成的 Issue"}
+            </p>
           ) : (
             <IssueList issues={myIssues} showProject />
           )}

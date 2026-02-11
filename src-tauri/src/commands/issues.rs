@@ -11,19 +11,19 @@ fn get_client(app: &AppHandle) -> Result<RedmineClient, String> {
 }
 
 #[tauri::command]
-pub async fn list_my_issues(app: AppHandle) -> Result<Vec<Issue>, String> {
+pub async fn list_my_issues(app: AppHandle, status: String) -> Result<Vec<Issue>, String> {
     let client = get_client(&app)?;
     client
-        .list_issues(&[("assigned_to_id", "me"), ("status_id", "open")])
+        .list_issues(&[("assigned_to_id", "me"), ("status_id", &status)])
         .await
 }
 
 #[tauri::command]
-pub async fn list_project_issues(app: AppHandle, project_id: u64) -> Result<Vec<Issue>, String> {
+pub async fn list_project_issues(app: AppHandle, project_id: u64, status: String) -> Result<Vec<Issue>, String> {
     let client = get_client(&app)?;
     let id_str = project_id.to_string();
     client
-        .list_issues(&[("project_id", &id_str)])
+        .list_issues(&[("project_id", &id_str), ("status_id", &status)])
         .await
 }
 
