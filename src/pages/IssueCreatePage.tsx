@@ -28,7 +28,7 @@ function IssueCreatePage() {
   return (
     <div className="issue-create-page">
       <div className="page-header">
-        <button className="back-button" onClick={() => navigate(-1)}>
+        <button className="back-button" onClick={() => navigate(`/projects/${projectId}/issues`)}>
           ← 返回
         </button>
         <h2>新增 Issue</h2>
@@ -38,7 +38,7 @@ function IssueCreatePage() {
         projectId={pid}
         onSubmit={handleSubmit}
         onSubmitContinue={handleSubmitContinue}
-        onCancel={() => navigate(-1)}
+        onCancel={() => navigate(`/projects/${projectId}/issues`)}
         submitLabel="建立"
       />
     </div>
