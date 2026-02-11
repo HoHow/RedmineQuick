@@ -53,8 +53,8 @@
 
 ## 8. 建立新 Issue
 
-- [ ] 8.1 新增 Tauri command：create_issue(params)
-- [ ] 8.2 建立 IssueCreatePage.tsx — 複用 IssueForm 元件、送出建立、成功後導向詳情頁、錯誤處理
+- [x] 8.1 新增 Tauri command：create_issue(params)
+- [x] 8.2 建立 IssueCreatePage.tsx — 複用 IssueForm 元件、送出建立、成功後導向詳情頁、錯誤處理
 
 ## 9. 工時記錄
 
