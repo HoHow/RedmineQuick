@@ -40,8 +40,8 @@
 
 ## 6. 專案 Issue 列表
 
-- [ ] 6.1 新增 Tauri command：list_project_issues(project_id)
-- [ ] 6.2 建立 ProjectIssuesPage.tsx — 顯示專案名稱、issue 列表（複用 IssueList 元件）、「新增 Issue」按鈕
+- [x] 6.1 新增 Tauri command：list_project_issues(project_id)
+- [x] 6.2 建立 ProjectIssuesPage.tsx — 顯示專案名稱、issue 列表（複用 IssueList 元件）、「新增 Issue」按鈕
 
 ## 7. Issue 詳情與編輯
 

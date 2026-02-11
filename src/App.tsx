@@ -3,6 +3,7 @@ import { AppProvider, useApp } from "./contexts/AppContext";
 import Layout from "./components/Layout";
 import SetupPage from "./pages/SetupPage";
 import DashboardPage from "./pages/DashboardPage";
+import ProjectIssuesPage from "./pages/ProjectIssuesPage";
 import "./App.css";
 
 function Placeholder({ name }: { name: string }) {
@@ -25,7 +26,7 @@ function AppRoutes() {
         ) : (
           <>
             <Route path="/" element={<DashboardPage />} />
-            <Route path="/projects/:projectId/issues" element={<Placeholder name="ProjectIssuesPage" />} />
+            <Route path="/projects/:projectId/issues" element={<ProjectIssuesPage />} />
             <Route path="/projects/:projectId/issues/new" element={<Placeholder name="IssueCreatePage" />} />
             <Route path="/issues/:issueId" element={<Placeholder name="IssueDetailPage" />} />
             <Route path="/issues/:issueId/time-entry" element={<Placeholder name="TimeEntryPage" />} />
