@@ -45,11 +45,11 @@ function TimeEntryPage() {
 
     try {
       await createTimeEntry({
-        issueId: Number(issueId),
+        issue_id: Number(issueId),
         hours: Number(hours),
-        activityId,
+        activity_id: activityId,
         comments: comments || undefined,
-        spentOn: spentOn || undefined,
+        spent_on: spentOn || undefined,
       });
       navigate(`/issues/${issueId}`);
     } catch (e) {

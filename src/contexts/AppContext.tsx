@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { loadConfig, type User, type RedmineConfig } from "../lib/api";
+import { loadConfig, testConnection, type User, type RedmineConfig } from "../lib/api";
 
 interface AppState {
   config: RedmineConfig | null;
@@ -7,6 +7,7 @@ interface AppState {
   loading: boolean;
   setConfig: (config: RedmineConfig | null) => void;
   setUser: (user: User | null) => void;
+  logout: () => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -18,16 +19,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadConfig()
-      .then((cfg) => {
+      .then(async (cfg) => {
         setConfig(cfg);
+        if (cfg) {
+          try {
+            const u = await testConnection(cfg.url, cfg.apiKey);
+            setUser(u);
+          } catch {
+            // auto-login failed, user stays null → redirect to login
+          }
+        }
       })
       .finally(() => {
         setLoading(false);
       });
   }, []);
 
+  function logout() {
+    setUser(null);
+  }
+
   return (
-    <AppContext.Provider value={{ config, user, loading, setConfig, setUser }}>
+    <AppContext.Provider value={{ config, user, loading, setConfig, setUser, logout }}>
       {children}
     </AppContext.Provider>
   );

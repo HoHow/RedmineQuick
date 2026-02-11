@@ -1,3 +1,4 @@
+use reqwest::redirect::Policy;
 use reqwest::Client;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -10,13 +11,38 @@ pub struct RedmineClient {
     http: Client,
 }
 
+fn check_response(response: &reqwest::Response) -> Result<(), String> {
+    let status = response.status();
+    if status.as_u16() == 401 {
+        return Err("認證失敗：API Key 無效或已過期".to_string());
+    }
+    if status.is_redirection() {
+        return Err("認證失敗：伺服器重新導向，請確認 API Key 是否正確".to_string());
+    }
+    if status.is_success() {
+        let content_type = response
+            .headers()
+            .get("content-type")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+        if !content_type.contains("json") {
+            return Err("認證失敗：伺服器回傳非 JSON 回應，請確認 URL 與 API Key 是否正確".to_string());
+        }
+    }
+    Ok(())
+}
+
 impl RedmineClient {
     pub fn new(base_url: &str, api_key: &str) -> Self {
         let base_url = base_url.trim_end_matches('/').to_string();
+        let http = Client::builder()
+            .redirect(Policy::none())
+            .build()
+            .expect("failed to build HTTP client");
         Self {
             base_url,
             api_key: api_key.to_string(),
-            http: Client::new(),
+            http,
         }
     }
 
@@ -30,6 +56,8 @@ impl RedmineClient {
             .send()
             .await
             .map_err(|e| format!("連線失敗：{}", e))?;
+
+        check_response(&response)?;
 
         if !response.status().is_success() {
             let status = response.status().as_u16();
@@ -59,6 +87,8 @@ impl RedmineClient {
             .await
             .map_err(|e| format!("連線失敗：{}", e))?;
 
+        check_response(&response)?;
+
         if !response.status().is_success() {
             let status = response.status().as_u16();
             let body = response.text().await.unwrap_or_default();
@@ -87,6 +117,8 @@ impl RedmineClient {
             .await
             .map_err(|e| format!("連線失敗：{}", e))?;
 
+        check_response(&response)?;
+
         if !response.status().is_success() {
             let status = response.status().as_u16();
             let body = response.text().await.unwrap_or_default();
@@ -110,6 +142,8 @@ impl RedmineClient {
             .send()
             .await
             .map_err(|e| format!("連線失敗：{}", e))?;
+
+        check_response(&response)?;
 
         if !response.status().is_success() {
             let status = response.status().as_u16();
@@ -148,7 +182,7 @@ impl RedmineClient {
     }
 
     pub async fn get_issue(&self, id: u64) -> Result<Issue, String> {
-        let path = format!("/issues/{}.json?include=watchers", id);
+        let path = format!("/issues/{}.json?include=watchers,journals", id);
         let resp: IssueResponse = self.get(&path).await?;
         Ok(resp.issue)
     }
@@ -178,6 +212,8 @@ impl RedmineClient {
             .send()
             .await
             .map_err(|e| format!("連線失敗：{}", e))?;
+
+        check_response(&response)?;
 
         if !response.status().is_success() {
             let status = response.status().as_u16();

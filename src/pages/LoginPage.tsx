@@ -1,59 +1,51 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { testConnection, saveConfig, type User } from "../lib/api";
+import { testConnection, saveConfig } from "../lib/api";
 import { useApp } from "../contexts/AppContext";
 
-function SetupPage() {
+function LoginPage() {
   const { config, setConfig, setUser } = useApp();
   const navigate = useNavigate();
 
   const [url, setUrl] = useState(config?.url ?? "");
   const [apiKey, setApiKey] = useState(config?.apiKey ?? "");
-  const [testing, setTesting] = useState(false);
+  const [logging, setLogging] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [testedUser, setTestedUser] = useState<User | null>(null);
 
-  async function handleTest() {
-    setTesting(true);
+  async function handleLogin() {
+    setLogging(true);
     setError(null);
-    setTestedUser(null);
 
     try {
       const user = await testConnection(url, apiKey);
-      setTestedUser(user);
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setTesting(false);
-    }
-  }
-
-  async function handleSave() {
-    try {
       await saveConfig(url, apiKey);
       setConfig({ url, apiKey });
-      if (testedUser) {
-        setUser(testedUser);
-      }
+      setUser(user);
       navigate("/");
     } catch (e) {
       setError(String(e));
+    } finally {
+      setLogging(false);
     }
   }
 
   return (
     <div className="setup-page">
-      <h2>Redmine 連線設定</h2>
+      <h2>登入 Redmine</h2>
 
       <div className="form-group">
         <label htmlFor="url">Redmine URL</label>
         <input
           id="url"
           type="text"
+          list="url-options"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://redmine.example.com"
         />
+        <datalist id="url-options">
+          <option value="https://your-redmine.example.com/" />
+        </datalist>
       </div>
 
       <div className="form-group">
@@ -68,26 +60,14 @@ function SetupPage() {
       </div>
 
       <div className="form-actions">
-        <button onClick={handleTest} disabled={testing || !url || !apiKey}>
-          {testing ? "測試中..." : "測試連線"}
+        <button className="primary-button" onClick={handleLogin} disabled={logging || !url || !apiKey}>
+          {logging ? "登入中..." : "登入"}
         </button>
-
-        {testedUser && (
-          <button onClick={handleSave}>
-            儲存並進入
-          </button>
-        )}
       </div>
-
-      {testedUser && (
-        <div className="success-message">
-          連線成功！目前使用者：{testedUser.firstname} {testedUser.lastname}
-        </div>
-      )}
 
       {error && <div className="error-message">{error}</div>}
     </div>
   );
 }
 
-export default SetupPage;
+export default LoginPage;

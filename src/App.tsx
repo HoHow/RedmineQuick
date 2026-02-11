@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import { AppProvider, useApp } from "./contexts/AppContext";
 import Layout from "./components/Layout";
-import SetupPage from "./pages/SetupPage";
+import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import ProjectIssuesPage from "./pages/ProjectIssuesPage";
 import IssueDetailPage from "./pages/IssueDetailPage";
@@ -10,7 +10,7 @@ import TimeEntryPage from "./pages/TimeEntryPage";
 import "./App.css";
 
 function AppRoutes() {
-  const { config, loading } = useApp();
+  const { user, loading } = useApp();
 
   if (loading) {
     return <div className="loading">載入中...</div>;
@@ -19,9 +19,9 @@ function AppRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route path="/setup" element={<SetupPage />} />
-        {!config ? (
-          <Route path="*" element={<Navigate to="/setup" replace />} />
+        <Route path="/login" element={<LoginPage />} />
+        {!user ? (
+          <Route path="*" element={<Navigate to="/login" replace />} />
         ) : (
           <>
             <Route path="/" element={<DashboardPage />} />

@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 // Common nested reference (e.g. tracker, status, priority, author, project)
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct IdName {
     pub id: u64,
     pub name: String,
@@ -15,13 +14,12 @@ pub struct CurrentUserResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct User {
     pub id: u64,
     pub login: String,
     pub firstname: String,
     pub lastname: String,
-    pub mail: String,
+    pub mail: Option<String>,
 }
 
 // GET /projects.json
@@ -32,7 +30,6 @@ pub struct ProjectsResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Project {
     pub id: u64,
     pub name: String,
@@ -53,7 +50,6 @@ pub struct IssueResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Issue {
     pub id: u64,
     pub subject: String,
@@ -70,12 +66,21 @@ pub struct Issue {
     pub estimated_hours: Option<f64>,
     pub done_ratio: u32,
     pub watchers: Option<Vec<IdName>>,
+    pub journals: Option<Vec<Journal>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct IssueParent {
     pub id: u64,
+}
+
+// Journal (issue history)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Journal {
+    pub id: u64,
+    pub user: IdName,
+    pub notes: Option<String>,
+    pub created_on: String,
 }
 
 // POST /issues.json, PUT /issues/<id>.json
@@ -113,6 +118,8 @@ pub struct IssueParams {
     pub done_ratio: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub watcher_user_ids: Option<Vec<u64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notes: Option<String>,
 }
 
 // POST /time_entries.json
@@ -165,7 +172,6 @@ pub struct MembershipsResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Membership {
     pub id: u64,
     pub user: Option<IdName>,

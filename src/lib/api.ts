@@ -11,7 +11,7 @@ export interface User {
   login: string;
   firstname: string;
   lastname: string;
-  mail: string;
+  mail: string | null;
 }
 
 export interface Project {
@@ -19,6 +19,13 @@ export interface Project {
   name: string;
   identifier: string;
   description: string | null;
+}
+
+export interface Journal {
+  id: number;
+  user: IdName;
+  notes: string | null;
+  created_on: string;
 }
 
 export interface Issue {
@@ -30,36 +37,38 @@ export interface Issue {
   status: IdName;
   priority: IdName;
   author: IdName;
-  assignedTo: IdName | null;
+  assigned_to: IdName | null;
   parent: { id: number } | null;
-  startDate: string | null;
-  dueDate: string | null;
-  estimatedHours: number | null;
-  doneRatio: number;
+  start_date: string | null;
+  due_date: string | null;
+  estimated_hours: number | null;
+  done_ratio: number;
   watchers: IdName[] | null;
+  journals: Journal[] | null;
 }
 
 export interface IssueParams {
-  trackerId?: number;
+  tracker_id?: number;
   subject?: string;
   description?: string;
-  statusId?: number;
-  priorityId?: number;
-  assignedToId?: number;
-  parentIssueId?: number;
-  startDate?: string;
-  dueDate?: string;
-  estimatedHours?: number;
-  doneRatio?: number;
-  watcherUserIds?: number[];
+  status_id?: number;
+  priority_id?: number;
+  assigned_to_id?: number;
+  parent_issue_id?: number;
+  start_date?: string;
+  due_date?: string;
+  estimated_hours?: number;
+  done_ratio?: number;
+  watcher_user_ids?: number[];
+  notes?: string;
 }
 
 export interface TimeEntryParams {
-  issueId: number;
+  issue_id: number;
   hours: number;
-  activityId: number;
+  activity_id: number;
   comments?: string;
-  spentOn?: string;
+  spent_on?: string;
 }
 
 export interface RedmineConfig {

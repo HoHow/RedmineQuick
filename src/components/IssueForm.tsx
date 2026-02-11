@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   listTrackers,
   listStatuses,
@@ -8,16 +8,19 @@ import {
   type Membership,
   type IssueParams,
 } from "../lib/api";
+import { useApp } from "../contexts/AppContext";
 
 interface IssueFormProps {
   projectId: number;
   initialValues?: IssueParams;
   onSubmit: (params: IssueParams) => Promise<void>;
+  onSubmitContinue?: (params: IssueParams) => Promise<void>;
   onCancel: () => void;
   submitLabel: string;
 }
 
-function IssueForm({ projectId, initialValues, onSubmit, onCancel, submitLabel }: IssueFormProps) {
+function IssueForm({ projectId, initialValues, onSubmit, onSubmitContinue, onCancel, submitLabel }: IssueFormProps) {
+  const { user } = useApp();
   const [trackers, setTrackers] = useState<IdName[]>([]);
   const [statuses, setStatuses] = useState<IdName[]>([]);
   const [priorities, setPriorities] = useState<IdName[]>([]);
@@ -26,20 +29,24 @@ function IssueForm({ projectId, initialValues, onSubmit, onCancel, submitLabel }
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [trackerId, setTrackerId] = useState<number | undefined>(initialValues?.trackerId);
+  const [trackerId, setTrackerId] = useState<number | undefined>(initialValues?.tracker_id);
   const [subject, setSubject] = useState(initialValues?.subject ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
-  const [statusId, setStatusId] = useState<number | undefined>(initialValues?.statusId);
-  const [priorityId, setPriorityId] = useState<number | undefined>(initialValues?.priorityId);
-  const [assignedToId, setAssignedToId] = useState<number | undefined>(initialValues?.assignedToId);
-  const [parentIssueId, setParentIssueId] = useState<number | undefined>(initialValues?.parentIssueId);
-  const [startDate, setStartDate] = useState(initialValues?.startDate ?? "");
-  const [dueDate, setDueDate] = useState(initialValues?.dueDate ?? "");
-  const [estimatedHours, setEstimatedHours] = useState<string>(
-    initialValues?.estimatedHours?.toString() ?? ""
+  const [statusId, setStatusId] = useState<number | undefined>(initialValues?.status_id);
+  const [priorityId, setPriorityId] = useState<number | undefined>(initialValues?.priority_id);
+  const [assignedToId, setAssignedToId] = useState<number | undefined>(initialValues?.assigned_to_id);
+  const [parentIssueId, setParentIssueId] = useState<number | undefined>(initialValues?.parent_issue_id);
+  const [startDate, setStartDate] = useState(
+    initialValues?.start_date ?? (initialValues ? "" : new Date().toISOString().split("T")[0])
   );
-  const [doneRatio, setDoneRatio] = useState<number>(initialValues?.doneRatio ?? 0);
-  const [watcherUserIds, setWatcherUserIds] = useState<number[]>(initialValues?.watcherUserIds ?? []);
+  const [dueDate, setDueDate] = useState(initialValues?.due_date ?? "");
+  const [estimatedHours, setEstimatedHours] = useState<string>(
+    initialValues?.estimated_hours?.toString() ?? ""
+  );
+  const [doneRatio, setDoneRatio] = useState<number>(initialValues?.done_ratio ?? 0);
+  const [watcherUserIds, setWatcherUserIds] = useState<number[]>(initialValues?.watcher_user_ids ?? []);
+  const [notes, setNotes] = useState("");
+  const continueRef = useRef(false);
 
   useEffect(() => {
     async function fetchOptions() {
@@ -55,9 +62,19 @@ function IssueForm({ projectId, initialValues, onSubmit, onCancel, submitLabel }
         setPriorities(p);
         setMembers(m);
 
-        if (!trackerId && t.length > 0) setTrackerId(t[0].id);
+        if (!trackerId && t.length > 0) {
+          const taskTracker = t.find((tr) => tr.name === "工作");
+          setTrackerId(taskTracker ? taskTracker.id : t[0].id);
+        }
         if (!statusId && s.length > 0) setStatusId(s[0].id);
-        if (!priorityId && p.length > 0) setPriorityId(p[0].id);
+        if (!priorityId && p.length > 0) {
+          const normalPriority = p.find((pr) => pr.name === "正常");
+          setPriorityId(normalPriority ? normalPriority.id : p[0].id);
+        }
+        if (assignedToId === undefined && user) {
+          const me = m.find((member) => member.user?.id === user.id);
+          if (me) setAssignedToId(me.user!.id);
+        }
       } catch (e) {
         setError(String(e));
       } finally {
@@ -73,26 +90,38 @@ function IssueForm({ projectId, initialValues, onSubmit, onCancel, submitLabel }
     setError(null);
 
     const params: IssueParams = {
-      trackerId,
+      tracker_id: trackerId,
       subject,
       description: description || undefined,
-      statusId,
-      priorityId,
-      assignedToId,
-      parentIssueId,
-      startDate: startDate || undefined,
-      dueDate: dueDate || undefined,
-      estimatedHours: estimatedHours ? Number(estimatedHours) : undefined,
-      doneRatio,
-      watcherUserIds: watcherUserIds.length > 0 ? watcherUserIds : undefined,
+      status_id: statusId,
+      priority_id: priorityId,
+      assigned_to_id: assignedToId,
+      parent_issue_id: parentIssueId,
+      start_date: startDate || undefined,
+      due_date: dueDate || undefined,
+      estimated_hours: estimatedHours ? Number(estimatedHours) : undefined,
+      done_ratio: doneRatio,
+      watcher_user_ids: watcherUserIds.length > 0 ? watcherUserIds : undefined,
+      notes: notes || undefined,
     };
 
     try {
-      await onSubmit(params);
+      if (continueRef.current && onSubmitContinue) {
+        await onSubmitContinue(params);
+        setSubject("");
+        setDescription("");
+        setDueDate("");
+        setEstimatedHours("");
+        setDoneRatio(0);
+        setNotes("");
+      } else {
+        await onSubmit(params);
+      }
     } catch (e) {
       setError(String(e));
     } finally {
       setSubmitting(false);
+      continueRef.current = false;
     }
   }
 
@@ -184,11 +213,23 @@ function IssueForm({ projectId, initialValues, onSubmit, onCancel, submitLabel }
       <div className="form-row">
         <div className="form-group">
           <label>開始日期</label>
-          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <input
+            type={startDate ? "date" : "text"}
+            value={startDate}
+            onFocus={(e) => { e.currentTarget.type = "date"; }}
+            onChange={(e) => setStartDate(e.target.value)}
+            placeholder="未設定"
+          />
         </div>
         <div className="form-group">
           <label>完成日期</label>
-          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <input
+            type={dueDate ? "date" : "text"}
+            value={dueDate}
+            onFocus={(e) => { e.currentTarget.type = "date"; }}
+            onChange={(e) => setDueDate(e.target.value)}
+            placeholder="未設定"
+          />
         </div>
       </div>
 
@@ -215,6 +256,18 @@ function IssueForm({ projectId, initialValues, onSubmit, onCancel, submitLabel }
         </div>
       </div>
 
+      {initialValues && (
+        <div className="form-group">
+          <label>筆記</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            placeholder="輸入更新筆記（選填）"
+          />
+        </div>
+      )}
+
       {userMembers.length > 0 && (
         <div className="form-group">
           <label>監看者</label>
@@ -235,8 +288,17 @@ function IssueForm({ projectId, initialValues, onSubmit, onCancel, submitLabel }
 
       <div className="form-actions">
         <button type="submit" className="primary-button" disabled={submitting || !subject}>
-          {submitting ? "送出中..." : submitLabel}
+          {submitting && !continueRef.current ? "送出中..." : submitLabel}
         </button>
+        {onSubmitContinue && (
+          <button
+            type="submit"
+            disabled={submitting || !subject}
+            onClick={() => { continueRef.current = true; }}
+          >
+            {submitting && continueRef.current ? "送出中..." : "繼續建立"}
+          </button>
+        )}
         <button type="button" onClick={onCancel}>
           取消
         </button>
