@@ -9,13 +9,13 @@
 
 ## 2. Redmine API Client（Rust 端）
 
-- [ ] 2.1 建立 redmine/models.rs — 定義所有 API response/request serde structs（User、Project、Issue、TimeEntry、Tracker、Status、Priority、Membership）
-- [ ] 2.2 建立 redmine/client.rs — RedmineClient struct，封裝 base_url、api_key、reqwest::Client，提供通用 GET/POST/PUT 方法
-- [ ] 2.3 實作 client 方法：get_current_user()
-- [ ] 2.4 實作 client 方法：list_projects()
-- [ ] 2.5 實作 client 方法：list_issues(filters)、get_issue(id)、create_issue(params)、update_issue(id, params)
-- [ ] 2.6 實作 client 方法：create_time_entry(params)
-- [ ] 2.7 實作 client 方法：list_trackers()、list_statuses()、list_priorities()、list_activities()、list_memberships(project_id)
+- [x] 2.1 建立 redmine/models.rs — 定義所有 API response/request serde structs（User、Project、Issue、TimeEntry、Tracker、Status、Priority、Membership）
+- [x] 2.2 建立 redmine/client.rs — RedmineClient struct，封裝 base_url、api_key、reqwest::Client，提供通用 GET/POST/PUT 方法
+- [x] 2.3 實作 client 方法：get_current_user()
+- [x] 2.4 實作 client 方法：list_projects()
+- [x] 2.5 實作 client 方法：list_issues(filters)、get_issue(id)、create_issue(params)、update_issue(id, params)
+- [x] 2.6 實作 client 方法：create_time_entry(params)
+- [x] 2.7 實作 client 方法：list_trackers()、list_statuses()、list_priorities()、list_activities()、list_memberships(project_id)
 
 ## 3. 設定儲存與連線管理
 
