@@ -45,11 +45,11 @@
 
 ## 7. Issue 詳情與編輯
 
-- [ ] 7.1 新增 Tauri command：get_issue(id)、update_issue(id, params)
-- [ ] 7.2 新增 Tauri commands：list_trackers、list_statuses、list_priorities、list_memberships(project_id)
-- [ ] 7.3 建立 IssueDetailPage.tsx — 檢視模式顯示所有欄位、「編輯」按鈕、快速更新狀態下拉選單、快速更新完成百分比
-- [ ] 7.4 建立 IssueForm.tsx 共用表單元件 — 支援所有欄位：追蹤標籤、主旨、概述、狀態、優先權、被分派者、父議題、開始日期、完成日期、預估工時、監看者
-- [ ] 7.5 實作 IssueDetailPage 編輯模式 — 切換為 IssueForm、送出更新、錯誤處理
+- [x] 7.1 新增 Tauri command：get_issue(id)、update_issue(id, params)
+- [x] 7.2 新增 Tauri commands：list_trackers、list_statuses、list_priorities、list_memberships(project_id)
+- [x] 7.3 建立 IssueDetailPage.tsx — 檢視模式顯示所有欄位、「編輯」按鈕、快速更新狀態下拉選單、快速更新完成百分比
+- [x] 7.4 建立 IssueForm.tsx 共用表單元件 — 支援所有欄位：追蹤標籤、主旨、概述、狀態、優先權、被分派者、父議題、開始日期、完成日期、預估工時、監看者
+- [x] 7.5 實作 IssueDetailPage 編輯模式 — 切換為 IssueForm、送出更新、錯誤處理
 
 ## 8. 建立新 Issue
 
