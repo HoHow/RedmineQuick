@@ -67,6 +67,7 @@ pub struct Issue {
     pub done_ratio: u32,
     pub watchers: Option<Vec<IdName>>,
     pub journals: Option<Vec<Journal>>,
+    pub attachments: Option<Vec<Attachment>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -76,10 +77,31 @@ pub struct IssueParent {
 
 // Journal (issue history)
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JournalDetail {
+    pub property: String,
+    pub name: String,
+    pub old_value: Option<String>,
+    pub new_value: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Journal {
     pub id: u64,
     pub user: IdName,
     pub notes: Option<String>,
+    pub created_on: String,
+    pub details: Vec<JournalDetail>,
+}
+
+// Attachment
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Attachment {
+    pub id: u64,
+    pub filename: String,
+    pub filesize: u64,
+    pub content_type: String,
+    pub content_url: String,
+    pub author: IdName,
     pub created_on: String,
 }
 

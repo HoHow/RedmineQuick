@@ -1,3 +1,4 @@
+use base64::Engine;
 use reqwest::redirect::Policy;
 use reqwest::Client;
 use serde::de::DeserializeOwned;
@@ -182,7 +183,7 @@ impl RedmineClient {
     }
 
     pub async fn get_issue(&self, id: u64) -> Result<Issue, String> {
-        let path = format!("/issues/{}.json?include=watchers,journals", id);
+        let path = format!("/issues/{}.json?include=watchers,journals,attachments", id);
         let resp: IssueResponse = self.get(&path).await?;
         Ok(resp.issue)
     }
@@ -253,5 +254,48 @@ impl RedmineClient {
         let path = format!("/projects/{}/memberships.json?limit=100", project_id);
         let resp: MembershipsResponse = self.get(&path).await?;
         Ok(resp.memberships)
+    }
+
+    pub async fn download_attachment_base64(&self, url: &str) -> Result<String, String> {
+        let response = self
+            .http
+            .get(url)
+            .header("X-Redmine-API-Key", &self.api_key)
+            .send()
+            .await
+            .map_err(|e| format!("下載附件失敗：{}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status().as_u16();
+            return Err(format!("下載附件失敗 ({})", status));
+        }
+
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|e| format!("讀取附件內容失敗：{}", e))?;
+
+        Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
+    }
+
+    pub async fn download_attachment_bytes(&self, url: &str) -> Result<Vec<u8>, String> {
+        let response = self
+            .http
+            .get(url)
+            .header("X-Redmine-API-Key", &self.api_key)
+            .send()
+            .await
+            .map_err(|e| format!("下載附件失敗：{}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status().as_u16();
+            return Err(format!("下載附件失敗 ({})", status));
+        }
+
+        response
+            .bytes()
+            .await
+            .map(|b| b.to_vec())
+            .map_err(|e| format!("讀取附件內容失敗：{}", e))
     }
 }

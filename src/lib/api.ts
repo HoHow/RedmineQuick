@@ -21,10 +21,28 @@ export interface Project {
   description: string | null;
 }
 
+export interface JournalDetail {
+  property: string;
+  name: string;
+  old_value: string | null;
+  new_value: string | null;
+}
+
 export interface Journal {
   id: number;
   user: IdName;
   notes: string | null;
+  created_on: string;
+  details: JournalDetail[];
+}
+
+export interface Attachment {
+  id: number;
+  filename: string;
+  filesize: number;
+  content_type: string;
+  content_url: string;
+  author: IdName;
   created_on: string;
 }
 
@@ -45,6 +63,7 @@ export interface Issue {
   done_ratio: number;
   watchers: IdName[] | null;
   journals: Journal[] | null;
+  attachments: Attachment[] | null;
 }
 
 export interface IssueParams {
@@ -145,4 +164,13 @@ export function listActivities(): Promise<IdName[]> {
 
 export function listMemberships(projectId: number): Promise<Membership[]> {
   return invoke("list_memberships", { projectId });
+}
+
+// Attachments
+export function downloadAttachment(url: string): Promise<string> {
+  return invoke("download_attachment", { url });
+}
+
+export function saveAttachment(url: string, filename: string): Promise<void> {
+  return invoke("save_attachment", { url, filename });
 }

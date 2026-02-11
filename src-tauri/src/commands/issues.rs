@@ -1,4 +1,5 @@
 use tauri::AppHandle;
+use tauri_plugin_dialog::DialogExt;
 
 use crate::config;
 use crate::redmine::client::RedmineClient;
@@ -80,4 +81,37 @@ pub async fn list_memberships(
 ) -> Result<Vec<Membership>, String> {
     let client = get_client(&app)?;
     client.list_memberships(project_id).await
+}
+
+#[tauri::command]
+pub async fn download_attachment(app: AppHandle, url: String) -> Result<String, String> {
+    let client = get_client(&app)?;
+    client.download_attachment_base64(&url).await
+}
+
+#[tauri::command]
+pub async fn save_attachment(app: AppHandle, url: String, filename: String) -> Result<(), String> {
+    use std::path::PathBuf;
+    use tokio::sync::oneshot;
+
+    let client = get_client(&app)?;
+    let bytes = client.download_attachment_bytes(&url).await?;
+
+    let (tx, rx) = oneshot::channel::<Option<PathBuf>>();
+
+    app.dialog()
+        .file()
+        .set_file_name(&filename)
+        .save_file(move |path| {
+            let _ = tx.send(path.map(|p| p.as_path().unwrap().to_path_buf()));
+        });
+
+    let save_path = rx.await.map_err(|_| "對話框取消".to_string())?;
+
+    if let Some(path) = save_path {
+        std::fs::write(&path, &bytes).map_err(|e| format!("儲存檔案失敗：{}", e))?;
+        Ok(())
+    } else {
+        Ok(()) // user cancelled
+    }
 }
