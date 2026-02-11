@@ -28,6 +28,8 @@ pub fn run() {
             commands::issues::list_statuses,
             commands::issues::list_priorities,
             commands::issues::list_memberships,
+            commands::time_entries::create_time_entry,
+            commands::time_entries::list_activities,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

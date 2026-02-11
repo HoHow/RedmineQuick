@@ -58,8 +58,8 @@
 
 ## 9. 工時記錄
 
-- [ ] 9.1 新增 Tauri commands：create_time_entry(params)、list_activities
-- [ ] 9.2 建立 TimeEntryPage.tsx — 工時記錄表單（時數、活動類型、備註、日期），issue 自動帶入，送出後返回 Issue 詳情
+- [x] 9.1 新增 Tauri commands：create_time_entry(params)、list_activities
+- [x] 9.2 建立 TimeEntryPage.tsx — 工時記錄表單（時數、活動類型、備註、日期），issue 自動帶入，送出後返回 Issue 詳情
 
 ## 10. 整合與收尾
 

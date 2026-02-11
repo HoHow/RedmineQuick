@@ -6,11 +6,8 @@ import DashboardPage from "./pages/DashboardPage";
 import ProjectIssuesPage from "./pages/ProjectIssuesPage";
 import IssueDetailPage from "./pages/IssueDetailPage";
 import IssueCreatePage from "./pages/IssueCreatePage";
+import TimeEntryPage from "./pages/TimeEntryPage";
 import "./App.css";
-
-function Placeholder({ name }: { name: string }) {
-  return <div>{name} - Coming soon</div>;
-}
 
 function AppRoutes() {
   const { config, loading } = useApp();
@@ -31,7 +28,7 @@ function AppRoutes() {
             <Route path="/projects/:projectId/issues" element={<ProjectIssuesPage />} />
             <Route path="/projects/:projectId/issues/new" element={<IssueCreatePage />} />
             <Route path="/issues/:issueId" element={<IssueDetailPage />} />
-            <Route path="/issues/:issueId/time-entry" element={<Placeholder name="TimeEntryPage" />} />
+            <Route path="/issues/:issueId/time-entry" element={<TimeEntryPage />} />
           </>
         )}
       </Route>
