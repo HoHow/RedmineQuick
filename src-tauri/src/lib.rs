@@ -18,6 +18,16 @@ pub fn run() {
             commands::connection::test_connection,
             commands::connection::save_config,
             commands::connection::load_config,
+            commands::projects::list_projects,
+            commands::issues::list_my_issues,
+            commands::issues::list_project_issues,
+            commands::issues::get_issue,
+            commands::issues::create_issue,
+            commands::issues::update_issue,
+            commands::issues::list_trackers,
+            commands::issues::list_statuses,
+            commands::issues::list_priorities,
+            commands::issues::list_memberships,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

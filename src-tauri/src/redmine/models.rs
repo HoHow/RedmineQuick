@@ -84,9 +84,11 @@ pub struct IssuePayload {
     pub issue: IssueParams,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct IssueParams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_id: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tracker_id: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -119,7 +121,7 @@ pub struct TimeEntryPayload {
     pub time_entry: TimeEntryParams,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct TimeEntryParams {
     pub issue_id: u64,

@@ -32,11 +32,11 @@
 
 ## 5. Dashboard 主畫面
 
-- [ ] 5.1 建立 Tauri commands：commands/projects.rs — list_projects command
-- [ ] 5.2 建立 Tauri commands：commands/issues.rs — list_my_issues command（assigned_to_id=me, status=open）
-- [ ] 5.3 於 lib.rs 註冊 projects 和 issues commands
-- [ ] 5.4 建立 DashboardPage.tsx — 左右或上下並列顯示「我的專案」列表和「我的待處理 Issue」列表
-- [ ] 5.5 建立 IssueList.tsx 共用元件 — 顯示 issue 列表（主旨、專案、追蹤標籤、狀態、優先權、完成百分比），可點擊進入詳情
+- [x] 5.1 建立 Tauri commands：commands/projects.rs — list_projects command
+- [x] 5.2 建立 Tauri commands：commands/issues.rs — list_my_issues command（assigned_to_id=me, status=open）
+- [x] 5.3 於 lib.rs 註冊 projects 和 issues commands
+- [x] 5.4 建立 DashboardPage.tsx — 左右或上下並列顯示「我的專案」列表和「我的待處理 Issue」列表
+- [x] 5.5 建立 IssueList.tsx 共用元件 — 顯示 issue 列表（主旨、專案、追蹤標籤、狀態、優先權、完成百分比），可點擊進入詳情
 
 ## 6. 專案 Issue 列表
 

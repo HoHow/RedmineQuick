@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router";
 import { AppProvider, useApp } from "./contexts/AppContext";
 import Layout from "./components/Layout";
 import SetupPage from "./pages/SetupPage";
+import DashboardPage from "./pages/DashboardPage";
 import "./App.css";
 
 function Placeholder({ name }: { name: string }) {
@@ -23,7 +24,7 @@ function AppRoutes() {
           <Route path="*" element={<Navigate to="/setup" replace />} />
         ) : (
           <>
-            <Route path="/" element={<Placeholder name="DashboardPage" />} />
+            <Route path="/" element={<DashboardPage />} />
             <Route path="/projects/:projectId/issues" element={<Placeholder name="ProjectIssuesPage" />} />
             <Route path="/projects/:projectId/issues/new" element={<Placeholder name="IssueCreatePage" />} />
             <Route path="/issues/:issueId" element={<Placeholder name="IssueDetailPage" />} />
