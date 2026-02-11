@@ -1,24 +1,46 @@
-import { BrowserRouter, Routes, Route } from "react-router";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router";
+import { AppProvider, useApp } from "./contexts/AppContext";
 import Layout from "./components/Layout";
+import SetupPage from "./pages/SetupPage";
 import "./App.css";
 
 function Placeholder({ name }: { name: string }) {
   return <div>{name} - Coming soon</div>;
 }
 
+function AppRoutes() {
+  const { config, loading } = useApp();
+
+  if (loading) {
+    return <div className="loading">載入中...</div>;
+  }
+
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/setup" element={<SetupPage />} />
+        {!config ? (
+          <Route path="*" element={<Navigate to="/setup" replace />} />
+        ) : (
+          <>
+            <Route path="/" element={<Placeholder name="DashboardPage" />} />
+            <Route path="/projects/:projectId/issues" element={<Placeholder name="ProjectIssuesPage" />} />
+            <Route path="/projects/:projectId/issues/new" element={<Placeholder name="IssueCreatePage" />} />
+            <Route path="/issues/:issueId" element={<Placeholder name="IssueDetailPage" />} />
+            <Route path="/issues/:issueId/time-entry" element={<Placeholder name="TimeEntryPage" />} />
+          </>
+        )}
+      </Route>
+    </Routes>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/setup" element={<Placeholder name="SetupPage" />} />
-          <Route path="/" element={<Placeholder name="DashboardPage" />} />
-          <Route path="/projects/:projectId/issues" element={<Placeholder name="ProjectIssuesPage" />} />
-          <Route path="/projects/:projectId/issues/new" element={<Placeholder name="IssueCreatePage" />} />
-          <Route path="/issues/:issueId" element={<Placeholder name="IssueDetailPage" />} />
-          <Route path="/issues/:issueId/time-entry" element={<Placeholder name="TimeEntryPage" />} />
-        </Route>
-      </Routes>
+      <AppProvider>
+        <AppRoutes />
+      </AppProvider>
     </BrowserRouter>
   );
 }

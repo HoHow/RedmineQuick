@@ -25,10 +25,10 @@
 
 ## 4. 連線設定頁面（Frontend）
 
-- [ ] 4.1 建立 lib/api.ts — 封裝 invoke() 呼叫，定義 TypeScript 型別對應 Rust 端回傳結構
-- [ ] 4.2 建立 contexts/AppContext.tsx — 管理全域狀態：連線設定、目前使用者、是否已設定
-- [ ] 4.3 建立 SetupPage.tsx — URL 和 API Key 輸入表單、測試連線按鈕、成功/失敗訊息顯示
-- [ ] 4.4 實作啟動時檢查設定邏輯：有設定 → Dashboard，無設定 → SetupPage
+- [x] 4.1 建立 lib/api.ts — 封裝 invoke() 呼叫，定義 TypeScript 型別對應 Rust 端回傳結構
+- [x] 4.2 建立 contexts/AppContext.tsx — 管理全域狀態：連線設定、目前使用者、是否已設定
+- [x] 4.3 建立 SetupPage.tsx — URL 和 API Key 輸入表單、測試連線按鈕、成功/失敗訊息顯示
+- [x] 4.4 實作啟動時檢查設定邏輯：有設定 → Dashboard，無設定 → SetupPage
 
 ## 5. Dashboard 主畫面
 
