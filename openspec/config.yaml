@@ -1,0 +1,25 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Tauri 2, React 19, TypeScript (strict), Rust (2021 edition)
+  Frontend: React Router, React Context + useState (no external state management)
+  Backend: reqwest (HTTP client), tauri-plugin-store (config persistence), serde (serialization)
+  Domain: Redmine project management quick-access desktop tool
+  Language: 繁體中文 for all user-facing text and communication
+  Conventions: Conventional Commits (中文 message), feature branch per change
+
+rules:
+  proposal:
+    - 使用繁體中文撰寫
+    - Capabilities 使用 kebab-case 英文命名
+  design:
+    - 使用繁體中文撰寫
+    - Rust 模組結構需與 src-tauri/src/ 對應
+    - 前端結構需與 src/ 對應
+  specs:
+    - 使用繁體中文撰寫
+    - 使用 SHALL/MUST 表達規範性要求
+  tasks:
+    - 使用繁體中文撰寫
+    - 每個 task 應在一個工作階段內可完成
+    - 按功能群組分組，每組對應一次 git commit
