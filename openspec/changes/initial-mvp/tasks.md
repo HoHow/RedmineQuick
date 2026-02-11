@@ -19,9 +19,9 @@
 
 ## 3. 設定儲存與連線管理
 
-- [ ] 3.1 建立 config.rs — 使用 tauri-plugin-store 讀寫 Redmine URL 和 API Key
-- [ ] 3.2 建立 commands/connection.rs — Tauri commands：test_connection(url, api_key) 回傳使用者資訊、save_config、load_config
-- [ ] 3.3 於 lib.rs 註冊 connection commands 並初始化 tauri-plugin-store
+- [x] 3.1 建立 config.rs — 使用 tauri-plugin-store 讀寫 Redmine URL 和 API Key
+- [x] 3.2 建立 commands/connection.rs — Tauri commands：test_connection(url, api_key) 回傳使用者資訊、save_config、load_config
+- [x] 3.3 於 lib.rs 註冊 connection commands 並初始化 tauri-plugin-store
 
 ## 4. 連線設定頁面（Frontend）
 
