@@ -33,6 +33,8 @@ function UpdateChecker() {
           dismissed: false,
         }));
         setUpdate(result);
+        (window as unknown as Record<string, unknown>).__updateAvailable = true;
+        window.dispatchEvent(new Event("update-available"));
       }
       return result;
     } catch {
@@ -60,6 +62,8 @@ function UpdateChecker() {
             dismissed: false,
           }));
           setUpdate(result);
+          (window as unknown as Record<string, unknown>).__updateAvailable = true;
+          window.dispatchEvent(new Event("update-available"));
           return { available: true, version: result.version };
         }
         return { available: false };
@@ -105,6 +109,8 @@ function UpdateChecker() {
 
   function handleDismiss() {
     setState((s) => ({ ...s, dismissed: true }));
+    (window as unknown as Record<string, unknown>).__updateAvailable = false;
+    window.dispatchEvent(new Event("update-dismissed"));
   }
 
   if (!state.available || state.dismissed) return null;

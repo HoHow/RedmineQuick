@@ -7,6 +7,7 @@ import ProjectIssuesPage from "./pages/ProjectIssuesPage";
 import IssueDetailPage from "./pages/IssueDetailPage";
 import IssueCreatePage from "./pages/IssueCreatePage";
 import TimeEntryPage from "./pages/TimeEntryPage";
+import SettingsPage from "./pages/SettingsPage";
 import UpdateChecker from "./components/UpdateChecker";
 import "./App.css";
 
@@ -30,6 +31,7 @@ function AppRoutes() {
             <Route path="/projects/:projectId/issues/new" element={<IssueCreatePage />} />
             <Route path="/issues/:issueId" element={<IssueDetailPage />} />
             <Route path="/issues/:issueId/time-entry" element={<TimeEntryPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </>
         )}
       </Route>
