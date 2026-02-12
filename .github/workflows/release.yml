@@ -70,7 +70,7 @@ jobs:
           if ($exe) {
             $zipName = $exe.Name -replace '\.exe$', '.nsis.zip'
             Write-Host "Creating $zipName from $($exe.Name)..."
-            Compress-Archive -Path $exe.FullName -DestinationPath "updater-output\$zipName"
+            7z a -tzip "updater-output\$zipName" $exe.FullName
             Write-Host "Signing $zipName..."
             npx tauri signer sign "updater-output\$zipName"
             Write-Host "=== Updater output ==="
