@@ -69,31 +69,34 @@ jobs:
             echo "Done: $(ls -la "${f}.sig")"
           done
 
-      # 收集 updater 所需檔案到扁平目錄，避免 glob 匹配問題
-      - name: Collect updater artifacts
+      # macOS: 收集重新簽名後的 sig 檔
+      - name: Collect updater artifacts (macOS)
+        if: matrix.platform == 'macos-latest'
         shell: bash
         run: |
           mkdir -p updater-output
           ARCH="${{ matrix.arch }}"
-
-          # macOS: sig 檔（用 arch 區分）
-          for f in $(find src-tauri/target -name "*.app.tar.gz.sig" -type f 2>/dev/null); do
+          for f in $(find src-tauri/target -name "*.app.tar.gz.sig" -type f); do
             cp "$f" "updater-output/redminequick_${ARCH}.app.tar.gz.sig"
-            echo "Collected sig: $f"
+            echo "Collected: $f"
           done
-
-          # Windows: nsis.zip + sig
-          for f in $(find src-tauri/target -name "*.nsis.zip" -type f 2>/dev/null); do
-            cp "$f" "updater-output/$(basename "$f")"
-            echo "Collected nsis.zip: $f"
-          done
-          for f in $(find src-tauri/target -name "*.nsis.zip.sig" -type f 2>/dev/null); do
-            cp "$f" "updater-output/$(basename "$f")"
-            echo "Collected nsis.zip.sig: $f"
-          done
-
-          echo "=== Updater output ==="
           ls -la updater-output/
+
+      # Windows: 收集 nsis.zip + sig（用 PowerShell 避免路徑問題）
+      - name: Collect updater artifacts (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path updater-output
+          Get-ChildItem -Path src-tauri/target -Recurse -Filter "*.nsis.zip" | ForEach-Object {
+            Copy-Item $_.FullName -Destination "updater-output/$($_.Name)"
+            Write-Host "Collected: $($_.FullName)"
+          }
+          Get-ChildItem -Path src-tauri/target -Recurse -Filter "*.nsis.zip.sig" | ForEach-Object {
+            Copy-Item $_.FullName -Destination "updater-output/$($_.Name)"
+            Write-Host "Collected: $($_.FullName)"
+          }
+          Get-ChildItem updater-output/
 
       - name: Upload updater artifacts
         uses: actions/upload-artifact@v4
@@ -131,8 +134,13 @@ jobs:
       - name: Copy updater bundles to release assets
         run: |
           for f in updater-artifacts/*.nsis.zip; do
-            [ -f "$f" ] && cp "$f" release-assets/ && echo "Added: $(basename "$f")"
+            if [ -f "$f" ]; then
+              cp "$f" release-assets/
+              echo "Added: $(basename "$f")"
+            fi
           done
+          echo "Release assets:"
+          ls release-assets/
 
       - name: Generate latest.json
         run: |
