@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { useApp } from "../contexts/AppContext";
+import { useNotifications, clearNotificationStorage } from "../contexts/NotificationContext";
 
 function Layout() {
   const navigate = useNavigate();
@@ -15,8 +16,11 @@ function Layout() {
   });
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [hasUpdate, setHasUpdate] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const { notifications, unreadCount, markAsRead, clearAll } = useNotifications();
 
   useEffect(() => {
     function onUpdateAvailable() {
@@ -47,12 +51,27 @@ function Layout() {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
     }
-    if (dropdownOpen) {
+    if (dropdownOpen || notifOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
     }
-  }, [dropdownOpen]);
+  }, [dropdownOpen, notifOpen]);
+
+  function formatNotifTime(iso: string) {
+    const date = new Date(iso);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "剛才";
+    if (diffMin < 60) return `${diffMin} 分鐘前`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr} 小時前`;
+    return date.toLocaleDateString("zh-TW");
+  }
 
   function toggleTheme() {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
@@ -60,6 +79,7 @@ function Layout() {
 
   function handleLogout() {
     setDropdownOpen(false);
+    clearNotificationStorage();
     logout();
     navigate("/login");
   }
@@ -77,6 +97,53 @@ function Layout() {
             </button>
             {user && (
               <>
+                <div className="notif-dropdown" ref={notifRef}>
+                  <button
+                    className="notif-button"
+                    onClick={() => setNotifOpen((prev) => !prev)}
+                    title="通知"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
+                    {unreadCount > 0 && (
+                      <span className="notif-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>
+                    )}
+                  </button>
+                  {notifOpen && (
+                    <div className="notif-menu">
+                      <div className="notif-header">
+                        <span>通知</span>
+                        {notifications.length > 0 && (
+                          <button className="notif-clear" onClick={() => { clearAll(); setNotifOpen(false); }}>
+                            清除全部
+                          </button>
+                        )}
+                      </div>
+                      {notifications.length === 0 ? (
+                        <div className="notif-empty">沒有通知</div>
+                      ) : (
+                        <div className="notif-list">
+                          {notifications.map((n) => (
+                            <button
+                              key={n.id}
+                              className={`notif-item ${n.read ? "" : "notif-unread"}`}
+                              onClick={() => {
+                                markAsRead(n.id);
+                                setNotifOpen(false);
+                                navigate(`/issues/${n.issueId}`);
+                              }}
+                            >
+                              <div className="notif-item-title">#{n.issueId} {n.subject}</div>
+                              <div className="notif-item-meta">{n.projectName} · {formatNotifTime(n.createdAt)}</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <button
                   className="settings-button"
                   onClick={() => navigate("/settings")}

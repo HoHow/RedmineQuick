@@ -8,6 +8,7 @@ import IssueDetailPage from "./pages/IssueDetailPage";
 import IssueCreatePage from "./pages/IssueCreatePage";
 import TimeEntryPage from "./pages/TimeEntryPage";
 import SettingsPage from "./pages/SettingsPage";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import UpdateChecker from "./components/UpdateChecker";
 import "./App.css";
 
@@ -43,8 +44,10 @@ function App() {
   return (
     <BrowserRouter>
       <AppProvider>
-        <UpdateChecker />
-        <AppRoutes />
+        <NotificationProvider>
+          <UpdateChecker />
+          <AppRoutes />
+        </NotificationProvider>
       </AppProvider>
     </BrowserRouter>
   );

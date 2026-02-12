@@ -1,6 +1,10 @@
 mod commands;
 mod config;
+mod polling;
 mod redmine;
+mod tray;
+
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -9,6 +13,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![
             commands::connection::test_connection,
             commands::connection::save_config,
@@ -28,6 +33,25 @@ pub fn run() {
             commands::time_entries::create_time_entry,
             commands::time_entries::list_activities,
         ])
+        .setup(|app| {
+            // System Tray
+            tray::setup_tray(app)?;
+
+            // 攔截視窗關閉 → 隱藏而非退出
+            let window = app.get_webview_window("main").unwrap();
+            let window_clone = window.clone();
+            window.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let _ = window_clone.hide();
+                }
+            });
+
+            // 背景 Polling
+            polling::start_polling(app.handle().clone());
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

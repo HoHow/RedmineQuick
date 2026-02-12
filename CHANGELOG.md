@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.0
+
+- 新增 System Tray：關閉視窗自動隱藏至系統匣，左鍵開啟、右鍵選單
+- 新增背景 Polling：每 2 分鐘輪詢指派給自己的新 Issue
+- 新增 OS 原生通知：新 Issue 時推送系統通知，點擊直接跳轉至 Issue 詳情
+- 新增 Navbar 鈴鐺通知：未讀數量紅點、通知下拉列表、標記已讀、清除全部
+- 通知紀錄持久化至 localStorage，登出時自動清除
+
 ## v0.2.0
 
 - 新增自動更新功能（tauri-plugin-updater，雙 repo 架構）
