@@ -72,7 +72,7 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
-          REPO="Oliver/RedmineQuick-releases"
+          REPO="HoHow/RedmineQuick-releases"
           # Create release on public repo (or update if exists)
           gh release create "$TAG" \
             --repo "$REPO" \

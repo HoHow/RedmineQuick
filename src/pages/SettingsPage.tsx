@@ -25,7 +25,7 @@ function SettingsPage() {
     async function fetchReleases() {
       try {
         const res = await fetch(
-          "https://api.github.com/repos/Oliver/RedmineQuick-releases/releases"
+          "https://api.github.com/repos/HoHow/RedmineQuick-releases/releases"
         );
         if (!res.ok) throw new Error("Failed to fetch");
         const data: Release[] = await res.json();
