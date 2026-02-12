@@ -54,22 +54,31 @@ jobs:
           includeUpdaterJson: false
           args: ${{ matrix.args }}
 
-      # Windows: tauri-action 產生 nsis.zip 但不上傳到 release，在這裡收集
-      - name: Collect updater bundle (Windows)
+      # Windows: tauri-action 會刪除 nsis.zip，用剩餘的 .exe 自行建立並簽名
+      - name: Create updater bundle (Windows)
         if: matrix.platform == 'windows-latest'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path updater-output
           $nsisDir = "src-tauri\target\release\bundle\nsis"
           Write-Host "=== nsis directory contents ==="
           Get-ChildItem -Path $nsisDir | ForEach-Object { Write-Host "  $($_.Name) ($($_.Length) bytes)" }
-          $files = Get-ChildItem -Path $nsisDir -File | Where-Object { $_.Name -like "*.nsis.zip*" }
-          foreach ($f in $files) {
-            Copy-Item $f.FullName -Destination "updater-output\$($f.Name)"
-            Write-Host "Collected: $($f.Name)"
+          $exe = Get-ChildItem -Path $nsisDir -Filter "*-setup.exe" | Select-Object -First 1
+          if ($exe) {
+            $zipName = $exe.Name -replace '\.exe$', '.nsis.zip'
+            Write-Host "Creating $zipName from $($exe.Name)..."
+            Compress-Archive -Path $exe.FullName -DestinationPath "updater-output\$zipName"
+            Write-Host "Signing $zipName..."
+            npx tauri signer sign "updater-output\$zipName"
+            Write-Host "=== Updater output ==="
+            Get-ChildItem updater-output | ForEach-Object { Write-Host "  $($_.Name) ($($_.Length) bytes)" }
+          } else {
+            Write-Host "ERROR: No setup exe found in $nsisDir"
+            exit 1
           }
-          Write-Host "=== Updater output ==="
-          Get-ChildItem updater-output
 
       # macOS: tauri-action 會重新打包 .app.tar.gz，導致原始簽名失效
       # 重新簽名後，收集 .app.tar.gz + .sig（確保兩者匹配）
