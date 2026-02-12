@@ -3,14 +3,34 @@ import { useNavigate } from "react-router";
 import { testConnection, saveConfig } from "../lib/api";
 import { useApp } from "../contexts/AppContext";
 
+const REMEMBERED_URL_KEY = "rememberedRedmineUrl";
+
 function LoginPage() {
   const { config, setConfig, setUser } = useApp();
   const navigate = useNavigate();
 
-  const [url, setUrl] = useState(config?.url ?? "");
+  const savedUrl = localStorage.getItem(REMEMBERED_URL_KEY);
+  const [url, setUrl] = useState(config?.url ?? savedUrl ?? "");
   const [apiKey, setApiKey] = useState(config?.apiKey ?? "");
+  const [rememberUrl, setRememberUrl] = useState(savedUrl !== null);
   const [logging, setLogging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function handleUrlChange(newUrl: string) {
+    setUrl(newUrl);
+    if (rememberUrl) {
+      localStorage.setItem(REMEMBERED_URL_KEY, newUrl);
+    }
+  }
+
+  function handleRememberToggle(checked: boolean) {
+    setRememberUrl(checked);
+    if (checked) {
+      localStorage.setItem(REMEMBERED_URL_KEY, url);
+    } else {
+      localStorage.removeItem(REMEMBERED_URL_KEY);
+    }
+  }
 
   async function handleLogin() {
     setLogging(true);
@@ -38,14 +58,18 @@ function LoginPage() {
         <input
           id="url"
           type="text"
-          list="url-options"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={(e) => handleUrlChange(e.target.value)}
           placeholder="https://redmine.example.com"
         />
-        <datalist id="url-options">
-          <option value="https://your-redmine.example.com/" />
-        </datalist>
+        <label className="remember-url-label">
+          <input
+            type="checkbox"
+            checked={rememberUrl}
+            onChange={(e) => handleRememberToggle(e.target.checked)}
+          />
+          記住 Redmine URL
+        </label>
       </div>
 
       <div className="form-group">
