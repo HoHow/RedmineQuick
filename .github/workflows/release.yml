@@ -82,21 +82,21 @@ jobs:
           done
           ls -la updater-output/
 
-      # Windows: 收集 nsis.zip + sig（用 PowerShell 避免路徑問題）
+      # Windows: 收集 nsis.zip + sig（用 PowerShell，直接指定路徑避免 wildcard 問題）
       - name: Collect updater artifacts (Windows)
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path updater-output
-          Get-ChildItem -Path src-tauri/target -Recurse -Filter "*.nsis.zip" | ForEach-Object {
-            Copy-Item $_.FullName -Destination "updater-output/$($_.Name)"
-            Write-Host "Collected: $($_.FullName)"
+          $nsisDir = "src-tauri\target\release\bundle\nsis"
+          Write-Host "Listing nsis directory:"
+          Get-ChildItem -Path $nsisDir | ForEach-Object { Write-Host "  $($_.Name)" }
+          Get-ChildItem -Path $nsisDir | Where-Object { $_.Name -match '\.nsis\.zip(\.sig)?$' } | ForEach-Object {
+            Copy-Item $_.FullName -Destination "updater-output\$($_.Name)"
+            Write-Host "Collected: $($_.Name)"
           }
-          Get-ChildItem -Path src-tauri/target -Recurse -Filter "*.nsis.zip.sig" | ForEach-Object {
-            Copy-Item $_.FullName -Destination "updater-output/$($_.Name)"
-            Write-Host "Collected: $($_.FullName)"
-          }
-          Get-ChildItem updater-output/
+          Write-Host "=== Updater output ==="
+          Get-ChildItem updater-output
 
       - name: Upload updater artifacts
         uses: actions/upload-artifact@v4
@@ -179,7 +179,7 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           VERSION="${TAG#v}"
-          awk "/^## v${VERSION}/,/^## v/" CHANGELOG.md | sed '1d' | sed '/^## v/,$d' > release-notes.md
+          awk 'BEGIN{p=0} /^## v'"$VERSION"'/{p=1;next} /^## v/{p=0} p' CHANGELOG.md > release-notes.md
           if [ ! -s release-notes.md ]; then
             echo "RedmineQuick $TAG" > release-notes.md
           fi
