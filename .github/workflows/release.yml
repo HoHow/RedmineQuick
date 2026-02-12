@@ -156,26 +156,12 @@ jobs:
           echo "  windows: $([ -n "$SIG_WINDOWS" ] && echo 'found' || echo 'MISSING')"
           echo "Windows bundle: $NSIS_ZIP"
 
-          cat > release-assets/latest.json << ENDJSON
-{
-  "version": "$VERSION",
-  "pub_date": "$PUB_DATE",
-  "platforms": {
-    "darwin-aarch64": {
-      "signature": "$SIG_AARCH64",
-      "url": "$BASE_URL/redminequick_aarch64.app.tar.gz"
-    },
-    "darwin-x86_64": {
-      "signature": "$SIG_X64_MAC",
-      "url": "$BASE_URL/redminequick_x64.app.tar.gz"
-    },
-    "windows-x86_64": {
-      "signature": "$SIG_WINDOWS",
-      "url": "$BASE_URL/$NSIS_ZIP"
-    }
-  }
-}
-ENDJSON
+          printf '{\n  "version": "%s",\n  "pub_date": "%s",\n  "platforms": {\n    "darwin-aarch64": {\n      "signature": "%s",\n      "url": "%s/redminequick_aarch64.app.tar.gz"\n    },\n    "darwin-x86_64": {\n      "signature": "%s",\n      "url": "%s/redminequick_x64.app.tar.gz"\n    },\n    "windows-x86_64": {\n      "signature": "%s",\n      "url": "%s/%s"\n    }\n  }\n}\n' \
+            "$VERSION" "$PUB_DATE" \
+            "$SIG_AARCH64" "$BASE_URL" \
+            "$SIG_X64_MAC" "$BASE_URL" \
+            "$SIG_WINDOWS" "$BASE_URL" "$NSIS_ZIP" \
+            > release-assets/latest.json
 
           echo "Generated latest.json:"
           cat release-assets/latest.json
