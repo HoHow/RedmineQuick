@@ -19,7 +19,7 @@ pub struct NewIssueEvent {
 }
 
 pub fn start_polling(app_handle: AppHandle) {
-    tokio::spawn(async move {
+    tauri::async_runtime::spawn(async move {
         let mut known_ids: HashSet<u64> = HashSet::new();
         let mut is_first_run = true;
 
