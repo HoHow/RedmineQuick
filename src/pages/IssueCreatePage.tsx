@@ -15,8 +15,8 @@ function IssueCreatePage() {
   const pid = Number(projectId);
 
   async function handleSubmit(params: IssueParams) {
-    const issue = await createIssue(pid, params);
-    navigate(`/issues/${issue.id}`);
+    await createIssue(pid, params);
+    navigate(`/projects/${projectId}/issues`);
   }
 
   async function handleSubmitContinue(params: IssueParams) {

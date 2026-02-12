@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { listProjectIssues, listProjects, type Issue, type Project } from "../lib/api";
+import { listProjectIssues, listProjects, listStatuses, updateIssue, type Issue, type Project, type IdName } from "../lib/api";
 import IssueList from "../components/IssueList";
 
 function ProjectIssuesPage() {
@@ -8,6 +8,7 @@ function ProjectIssuesPage() {
   const navigate = useNavigate();
   const [issues, setIssues] = useState<Issue[]>([]);
   const [project, setProject] = useState<Project | null>(null);
+  const [statuses, setStatuses] = useState<IdName[]>([]);
   const [loading, setLoading] = useState(true);
   const [issuesLoading, setIssuesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,11 +19,13 @@ function ProjectIssuesPage() {
       if (!projectId) return;
       const pid = Number(projectId);
       try {
-        const [issueList, projects] = await Promise.all([
+        const [issueList, projects, statusList] = await Promise.all([
           listProjectIssues(pid, "open"),
           listProjects(),
+          listStatuses(),
         ]);
         setIssues(issueList);
+        setStatuses(statusList);
         const found = projects.find((p) => p.id === pid);
         setProject(found ?? null);
       } catch (e) {
@@ -42,6 +45,19 @@ function ProjectIssuesPage() {
       .catch((e) => setError(String(e)))
       .finally(() => setIssuesLoading(false));
   }, [statusFilter]);
+
+  async function handleStatusChange(issueId: number, statusId: number) {
+    const original = issues;
+    setIssues((prev) =>
+      prev.map((i) => (i.id === issueId ? { ...i, status: { ...i.status, id: statusId, name: statuses.find((s) => s.id === statusId)?.name ?? i.status.name } } : i))
+    );
+    try {
+      await updateIssue(issueId, { status_id: statusId });
+    } catch (e) {
+      setIssues(original);
+      setError(String(e));
+    }
+  }
 
   if (loading) {
     return <div className="loading">載入中...</div>;
@@ -92,7 +108,7 @@ function ProjectIssuesPage() {
       ) : issues.length === 0 ? (
         <p className="empty-state">此專案目前沒有 Issue</p>
       ) : (
-        <IssueList issues={issues} />
+        <IssueList issues={issues} statuses={statuses} onStatusChange={handleStatusChange} />
       )}
     </div>
   );

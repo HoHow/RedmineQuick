@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { listProjects, listMyIssues, type Project, type Issue } from "../lib/api";
+import { listProjects, listMyIssues, listStatuses, updateIssue, type Project, type Issue, type IdName } from "../lib/api";
 import IssueList from "../components/IssueList";
 
 function DashboardPage() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
   const [myIssues, setMyIssues] = useState<Issue[]>([]);
+  const [statuses, setStatuses] = useState<IdName[]>([]);
   const [loading, setLoading] = useState(true);
   const [issuesLoading, setIssuesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,12 +16,14 @@ function DashboardPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [projectList, issueList] = await Promise.all([
+        const [projectList, issueList, statusList] = await Promise.all([
           listProjects(),
           listMyIssues("open"),
+          listStatuses(),
         ]);
         setProjects(projectList);
         setMyIssues(issueList);
+        setStatuses(statusList);
       } catch (e) {
         setError(String(e));
       } finally {
@@ -38,6 +41,19 @@ function DashboardPage() {
       .catch((e) => setError(String(e)))
       .finally(() => setIssuesLoading(false));
   }, [tab]);
+
+  async function handleStatusChange(issueId: number, statusId: number) {
+    const original = myIssues;
+    setMyIssues((prev) =>
+      prev.map((i) => (i.id === issueId ? { ...i, status: { ...i.status, id: statusId, name: statuses.find((s) => s.id === statusId)?.name ?? i.status.name } } : i))
+    );
+    try {
+      await updateIssue(issueId, { status_id: statusId });
+    } catch (e) {
+      setMyIssues(original);
+      setError(String(e));
+    }
+  }
 
   if (loading) {
     return <div className="loading">載入中...</div>;
@@ -93,7 +109,7 @@ function DashboardPage() {
               {tab === "open" ? "目前沒有待處理的 Issue" : "目前沒有已完成的 Issue"}
             </p>
           ) : (
-            <IssueList issues={myIssues} showProject />
+            <IssueList issues={myIssues} showProject statuses={statuses} onStatusChange={handleStatusChange} />
           )}
         </section>
       </div>

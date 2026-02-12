@@ -434,6 +434,32 @@ button:disabled {
   background-color: var(--color-bg-tertiary);
 }
 
+.inline-status-select {
+  font-size: 0.85rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  width: auto;
+}
+
+.inline-status-select:hover {
+  border-color: var(--color-border);
+  background: var(--color-bg-secondary);
+}
+
+.inline-status-select:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.inline-status-select:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
 .issue-subject {
   font-weight: 500;
 }

@@ -114,6 +114,7 @@ function IssueForm({ projectId, initialValues, onSubmit, onSubmitContinue, onCan
         setEstimatedHours("");
         setDoneRatio(0);
         setNotes("");
+        window.scrollTo(0, 0);
       } else {
         await onSubmit(params);
       }

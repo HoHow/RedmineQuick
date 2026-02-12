@@ -98,11 +98,13 @@ function UpdateChecker() {
         }
       });
       // 安裝完成後重啟（Tauri 會自動處理）
-    } catch {
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("Update failed:", msg);
       setState((s) => ({
         ...s,
         downloading: false,
-        error: "更新下載失敗，請稍後再試",
+        error: `更新失敗：${msg}`,
       }));
     }
   }
