@@ -34,8 +34,11 @@ jobs:
       - run: npm ci
 
       - uses: tauri-apps/tauri-action@v0
+        id: tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'RedmineQuick ${{ github.ref_name }}'
@@ -43,3 +46,39 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download release assets from draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p release-assets
+          TAG="${{ github.ref_name }}"
+          # Get the draft release and download all assets
+          gh release download "$TAG" --dir release-assets || true
+          ls -la release-assets/
+
+      - name: Publish to public releases repo
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_REPO_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          REPO="Oliver/RedmineQuick-releases"
+          # Create release on public repo (or update if exists)
+          gh release create "$TAG" \
+            --repo "$REPO" \
+            --title "RedmineQuick $TAG" \
+            --notes "RedmineQuick $TAG" \
+            release-assets/* \
+            || gh release upload "$TAG" \
+              --repo "$REPO" \
+              --clobber \
+              release-assets/*

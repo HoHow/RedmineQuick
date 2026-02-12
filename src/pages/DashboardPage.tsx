@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { getVersion } from "@tauri-apps/api/app";
 import { listProjects, listMyIssues, type Project, type Issue } from "../lib/api";
 import IssueList from "../components/IssueList";
 
@@ -11,6 +12,35 @@ function DashboardPage() {
   const [issuesLoading, setIssuesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"open" | "closed">("open");
+  const [appVersion, setAppVersion] = useState("");
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateMsg, setUpdateMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(() => {});
+  }, []);
+
+  async function handleCheckUpdate() {
+    setCheckingUpdate(true);
+    setUpdateMsg(null);
+    try {
+      const checker = (window as unknown as Record<string, unknown>).__checkForUpdate as (() => Promise<{ available: boolean; version?: string; error?: string }>) | undefined;
+      if (checker) {
+        const result = await checker();
+        if (result.error) {
+          setUpdateMsg(result.error);
+        } else if (!result.available) {
+          setUpdateMsg("目前已是最新版本");
+        }
+        // 如果有更新，UpdateChecker 會自動顯示對話框
+      }
+    } catch {
+      setUpdateMsg("無法檢查更新，請確認網路連線");
+    } finally {
+      setCheckingUpdate(false);
+      setTimeout(() => setUpdateMsg(null), 3000);
+    }
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -96,6 +126,19 @@ function DashboardPage() {
             <IssueList issues={myIssues} showProject />
           )}
         </section>
+      </div>
+
+      <div className="app-footer">
+        <span className="app-version">v{appVersion}</span>
+        <span className="footer-separator">·</span>
+        <button
+          className="check-update-link"
+          onClick={handleCheckUpdate}
+          disabled={checkingUpdate}
+        >
+          {checkingUpdate ? "檢查中..." : "檢查更新"}
+        </button>
+        {updateMsg && <span className="update-msg">{updateMsg}</span>}
       </div>
     </div>
   );

@@ -693,3 +693,152 @@ button:disabled {
   font-size: 0.9rem;
   font-family: inherit;
 }
+
+/* Update dialog */
+.update-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.update-dialog {
+  background: var(--color-bg-secondary);
+  border-radius: 12px;
+  padding: 2rem;
+  min-width: 320px;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.update-dialog h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--color-text);
+  font-size: 1.2rem;
+}
+
+.update-version {
+  color: var(--color-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 1.5rem 0;
+}
+
+.update-error {
+  color: var(--color-error);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.update-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.update-actions .btn-primary {
+  padding: 0.5rem 1.5rem;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.update-actions .btn-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.update-actions .btn-secondary {
+  padding: 0.5rem 1.5rem;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.update-actions .btn-secondary:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.update-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.update-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--color-bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.update-progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.update-progress-text {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  min-width: 3em;
+  text-align: right;
+}
+
+/* App footer */
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.8rem;
+}
+
+.app-version {
+  color: var(--color-text-tertiary);
+}
+
+.footer-separator {
+  color: var(--color-text-tertiary);
+}
+
+.check-update-link {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.check-update-link:hover {
+  color: var(--color-primary-hover);
+}
+
+.check-update-link:disabled {
+  color: var(--color-text-tertiary);
+  cursor: default;
+  text-decoration: none;
+}
+
+.update-msg {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}

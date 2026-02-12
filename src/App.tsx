@@ -7,6 +7,7 @@ import ProjectIssuesPage from "./pages/ProjectIssuesPage";
 import IssueDetailPage from "./pages/IssueDetailPage";
 import IssueCreatePage from "./pages/IssueCreatePage";
 import TimeEntryPage from "./pages/TimeEntryPage";
+import UpdateChecker from "./components/UpdateChecker";
 import "./App.css";
 
 function AppRoutes() {
@@ -40,6 +41,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppProvider>
+        <UpdateChecker />
         <AppRoutes />
       </AppProvider>
     </BrowserRouter>

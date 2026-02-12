@@ -21,6 +21,14 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/Oliver/RedmineQuick-releases/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDBBNDlFRjIzOEQ1QkM2MTkKUldRWnhsdU5JKzlKQ2o4T0RzZm1EZXpvVzRTQlB1ZzZhTUtIejVEblNScjhmaXphMGt6eS9NTXkK"
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",
