@@ -48,7 +48,21 @@ jobs:
           releaseBody: ''
           releaseDraft: true
           prerelease: false
+          includeUpdaterJson: false
           args: ${{ matrix.args }}
+
+      - name: Upload updater artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: updater-${{ matrix.platform }}-${{ strategy.job-index }}
+          path: |
+            src-tauri/target/**/release/bundle/**/*.sig
+            src-tauri/target/**/release/bundle/**/*.tar.gz
+            src-tauri/target/**/release/bundle/**/*.msi.zip
+            src-tauri/target/**/release/bundle/**/*.msi.zip.sig
+            src-tauri/target/**/release/bundle/**/*.nsis.zip
+            src-tauri/target/**/release/bundle/**/*.nsis.zip.sig
+          if-no-files-found: ignore
 
   publish:
     needs: build
@@ -57,15 +71,91 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Download updater artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: updater-artifacts
+          merge-multiple: true
+
+      - name: List updater artifacts
+        run: find updater-artifacts -type f | sort
+
       - name: Download release assets from draft
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p release-assets
           TAG="${{ github.ref_name }}"
-          # Get the draft release and download all assets
           gh release download "$TAG" --dir release-assets || true
           ls -la release-assets/
+
+      - name: Generate latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          REPO="HoHow/RedmineQuick-releases"
+          PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Find signature files
+          AARCH64_SIG=$(find updater-artifacts -name "*.app.tar.gz.sig" -path "*aarch64*" | head -1)
+          X64_MAC_SIG=$(find updater-artifacts -name "*.app.tar.gz.sig" -path "*x86_64*" -o -name "*.app.tar.gz.sig" -path "*x64*" | grep -v aarch64 | head -1)
+          WINDOWS_SIG=$(find updater-artifacts -name "*.nsis.zip.sig" -o -name "*.msi.zip.sig" | head -1)
+
+          echo "Found signatures:"
+          echo "  aarch64 mac: $AARCH64_SIG"
+          echo "  x64 mac: $X64_MAC_SIG"
+          echo "  windows: $WINDOWS_SIG"
+
+          # Read signature contents
+          SIG_AARCH64=""
+          SIG_X64_MAC=""
+          SIG_WINDOWS=""
+
+          if [ -n "$AARCH64_SIG" ] && [ -f "$AARCH64_SIG" ]; then
+            SIG_AARCH64=$(cat "$AARCH64_SIG")
+          fi
+          if [ -n "$X64_MAC_SIG" ] && [ -f "$X64_MAC_SIG" ]; then
+            SIG_X64_MAC=$(cat "$X64_MAC_SIG")
+          fi
+          if [ -n "$WINDOWS_SIG" ] && [ -f "$WINDOWS_SIG" ]; then
+            SIG_WINDOWS=$(cat "$WINDOWS_SIG")
+          fi
+
+          # Determine download URLs
+          BASE_URL="https://github.com/$REPO/releases/download/$TAG"
+
+          # Find actual filenames from release assets
+          AARCH64_TAR=$(ls release-assets/ | grep "aarch64.*app.*tar.gz" | head -1)
+          X64_TAR=$(ls release-assets/ | grep "x64.*app.*tar.gz" | head -1)
+          WINDOWS_MSI=$(ls release-assets/ | grep "\.msi$" | head -1)
+          WINDOWS_EXE=$(ls release-assets/ | grep "setup\.exe$" | head -1)
+
+          # Build latest.json
+          cat > release-assets/latest.json << ENDJSON
+          {
+            "version": "$VERSION",
+            "pub_date": "$PUB_DATE",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "$SIG_AARCH64",
+                "url": "$BASE_URL/$AARCH64_TAR"
+              },
+              "darwin-x86_64": {
+                "signature": "$SIG_X64_MAC",
+                "url": "$BASE_URL/$X64_TAR"
+              },
+              "windows-x86_64": {
+                "signature": "$SIG_WINDOWS",
+                "url": "$BASE_URL/${WINDOWS_EXE:-$WINDOWS_MSI}"
+              }
+            }
+          }
+          ENDJSON
+
+          echo "Generated latest.json:"
+          cat release-assets/latest.json
 
       - name: Publish to public releases repo
         env:
