@@ -54,35 +54,27 @@ jobs:
           includeUpdaterJson: false
           args: ${{ matrix.args }}
 
-      # tauri-action 會重新打包 macOS 的 .app.tar.gz，導致原始簽名失效
-      # 這裡重新簽名，確保 updater 能驗證
-      - name: Re-sign updater bundle (macOS)
+      # macOS: tauri-action 會重新打包 .app.tar.gz，導致原始簽名失效
+      # 重新簽名後，收集 .app.tar.gz + .sig（確保兩者匹配）
+      - name: Re-sign and collect updater bundle (macOS)
         if: matrix.platform == 'macos-latest'
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         shell: bash
         run: |
-          for f in $(find src-tauri/target -name "*.app.tar.gz" -type f); do
-            echo "Re-signing: $f"
-            npx tauri signer sign "$f"
-            echo "Done: $(ls -la "${f}.sig")"
-          done
-
-      # macOS: 收集重新簽名後的 sig 檔
-      - name: Collect updater artifacts (macOS)
-        if: matrix.platform == 'macos-latest'
-        shell: bash
-        run: |
           mkdir -p updater-output
           ARCH="${{ matrix.arch }}"
-          for f in $(find src-tauri/target -name "*.app.tar.gz.sig" -type f); do
-            cp "$f" "updater-output/redminequick_${ARCH}.app.tar.gz.sig"
-            echo "Collected: $f"
-          done
+          BUNDLE=$(find src-tauri/target -name "*.app.tar.gz" -type f | head -1)
+          echo "Found bundle: $BUNDLE"
+          echo "Re-signing..."
+          npx tauri signer sign "$BUNDLE"
+          cp "$BUNDLE" "updater-output/redminequick_${ARCH}.app.tar.gz"
+          cp "${BUNDLE}.sig" "updater-output/redminequick_${ARCH}.app.tar.gz.sig"
+          echo "=== Updater output ==="
           ls -la updater-output/
 
-      # Windows: 收集 nsis.zip + sig（用 PowerShell，直接指定路徑避免 wildcard 問題）
+      # Windows: 收集 nsis.zip + sig
       - name: Collect updater artifacts (Windows)
         if: matrix.platform == 'windows-latest'
         shell: pwsh
@@ -90,10 +82,11 @@ jobs:
           New-Item -ItemType Directory -Force -Path updater-output
           $nsisDir = "src-tauri\target\release\bundle\nsis"
           Write-Host "Listing nsis directory:"
-          Get-ChildItem -Path $nsisDir | ForEach-Object { Write-Host "  $($_.Name)" }
-          Get-ChildItem -Path $nsisDir | Where-Object { $_.Name -match '\.nsis\.zip(\.sig)?$' } | ForEach-Object {
-            Copy-Item $_.FullName -Destination "updater-output\$($_.Name)"
-            Write-Host "Collected: $($_.Name)"
+          Get-ChildItem -Path $nsisDir -Recurse | ForEach-Object { Write-Host "  $($_.FullName)" }
+          $files = Get-ChildItem -Path $nsisDir -File | Where-Object { $_.Name -like "*.nsis.zip*" }
+          foreach ($f in $files) {
+            Copy-Item $f.FullName -Destination "updater-output\$($f.Name)"
+            Write-Host "Collected: $($f.Name)"
           }
           Write-Host "=== Updater output ==="
           Get-ChildItem updater-output
@@ -130,17 +123,32 @@ jobs:
           gh release download "$TAG" --dir release-assets || true
           ls -la release-assets/
 
-      # 將 Windows nsis.zip 加入 release（updater 需要）
-      - name: Copy updater bundles to release assets
+      # 用 re-sign 後的 updater bundle 取代 draft release 的版本
+      # 這確保 .app.tar.gz 和 .sig 是匹配的
+      - name: Replace updater bundles with re-signed versions
         run: |
+          echo "=== Before replacement ==="
+          ls -la release-assets/*.app.tar.gz 2>/dev/null || true
+
+          # macOS: 用 re-sign 後的 .app.tar.gz 取代 draft release 的
+          for arch in aarch64 x64; do
+            BUNDLE="updater-artifacts/redminequick_${arch}.app.tar.gz"
+            if [ -f "$BUNDLE" ]; then
+              cp "$BUNDLE" "release-assets/redminequick_${arch}.app.tar.gz"
+              echo "Replaced macOS $arch bundle with re-signed version"
+            fi
+          done
+
+          # Windows: 加入 nsis.zip
           for f in updater-artifacts/*.nsis.zip; do
             if [ -f "$f" ]; then
               cp "$f" release-assets/
               echo "Added: $(basename "$f")"
             fi
           done
-          echo "Release assets:"
-          ls release-assets/
+
+          echo "=== After replacement ==="
+          ls -la release-assets/
 
       - name: Generate latest.json
         run: |
@@ -150,7 +158,7 @@ jobs:
           PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           BASE_URL="https://github.com/$REPO/releases/download/$TAG"
 
-          # 讀取簽名
+          # 讀取簽名（這些 sig 和對應的 .app.tar.gz 是匹配的）
           SIG_AARCH64=$(cat updater-artifacts/redminequick_aarch64.app.tar.gz.sig 2>/dev/null || echo "")
           SIG_X64_MAC=$(cat updater-artifacts/redminequick_x64.app.tar.gz.sig 2>/dev/null || echo "")
           SIG_WINDOWS=$(cat updater-artifacts/*.nsis.zip.sig 2>/dev/null || echo "")

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.4.1
+
+- 修正自動更新後 app crash 問題（簽名與檔案不匹配）
+- 修正更新完成後畫面卡在 100% 無法操作（新增 relaunch）
+- 修正 Windows updater 簽名遺失與 URL 為空的問題
+
 ## v0.4.0
 
 - 建立 Issue 後自動返回列表頁，不再跳到 Issue 詳情

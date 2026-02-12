@@ -1,6 +1,6 @@
 [package]
 name = "redminequick"
-version = "0.4.0"
+version = "0.4.1"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -29,4 +29,5 @@ base64 = "0.22"
 tauri-plugin-dialog = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-notification = "2"
+tauri-plugin-process = "2"
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { check, Update } from "@tauri-apps/plugin-updater";
+import { relaunch } from "@tauri-apps/plugin-process";
 
 interface UpdateState {
   available: boolean;
@@ -97,7 +98,7 @@ function UpdateChecker() {
           setState((s) => ({ ...s, progress: 100 }));
         }
       });
-      // 安裝完成後重啟（Tauri 會自動處理）
+      await relaunch();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("Update failed:", msg);
