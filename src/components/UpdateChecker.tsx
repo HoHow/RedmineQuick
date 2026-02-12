@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { check, Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
+import { useApp } from "../contexts/AppContext";
 
 interface UpdateState {
   available: boolean;
@@ -12,6 +13,7 @@ interface UpdateState {
 }
 
 function UpdateChecker() {
+  const { user } = useApp();
   const [state, setState] = useState<UpdateState>({
     available: false,
     version: "",
@@ -45,8 +47,8 @@ function UpdateChecker() {
   }, []);
 
   useEffect(() => {
-    checkForUpdate();
-  }, [checkForUpdate]);
+    if (user) checkForUpdate();
+  }, [user, checkForUpdate]);
 
   // 暴露 checkForUpdate 給外部使用（手動檢查）
   useEffect(() => {
@@ -116,7 +118,7 @@ function UpdateChecker() {
     window.dispatchEvent(new Event("update-dismissed"));
   }
 
-  if (!state.available || state.dismissed) return null;
+  if (!user || !state.available || state.dismissed) return null;
 
   return (
     <div className="update-overlay">

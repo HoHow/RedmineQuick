@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { listProjectIssues, listProjects, listStatuses, updateIssue, type Issue, type Project, type IdName } from "../lib/api";
+import { listProjectIssues, listProjects, listStatuses, listPriorities, updateIssue, type Issue, type Project, type IdName } from "../lib/api";
 import IssueList from "../components/IssueList";
 
 function ProjectIssuesPage() {
@@ -9,6 +9,7 @@ function ProjectIssuesPage() {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [statuses, setStatuses] = useState<IdName[]>([]);
+  const [priorities, setPriorities] = useState<IdName[]>([]);
   const [loading, setLoading] = useState(true);
   const [issuesLoading, setIssuesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,13 +20,15 @@ function ProjectIssuesPage() {
       if (!projectId) return;
       const pid = Number(projectId);
       try {
-        const [issueList, projects, statusList] = await Promise.all([
+        const [issueList, projects, statusList, priorityList] = await Promise.all([
           listProjectIssues(pid, "open"),
           listProjects(),
           listStatuses(),
+          listPriorities(),
         ]);
         setIssues(issueList);
         setStatuses(statusList);
+        setPriorities(priorityList);
         const found = projects.find((p) => p.id === pid);
         setProject(found ?? null);
       } catch (e) {
@@ -53,6 +56,21 @@ function ProjectIssuesPage() {
     );
     try {
       await updateIssue(issueId, { status_id: statusId });
+      const updated = await listProjectIssues(Number(projectId), statusFilter);
+      setIssues(updated);
+    } catch (e) {
+      setIssues(original);
+      setError(String(e));
+    }
+  }
+
+  async function handlePriorityChange(issueId: number, priorityId: number) {
+    const original = issues;
+    setIssues((prev) =>
+      prev.map((i) => (i.id === issueId ? { ...i, priority: { ...i.priority, id: priorityId, name: priorities.find((p) => p.id === priorityId)?.name ?? i.priority.name } } : i))
+    );
+    try {
+      await updateIssue(issueId, { priority_id: priorityId });
     } catch (e) {
       setIssues(original);
       setError(String(e));
@@ -87,13 +105,13 @@ function ProjectIssuesPage() {
           className={`filter-button ${statusFilter === "open" ? "active" : ""}`}
           onClick={() => setStatusFilter("open")}
         >
-          未關閉
+          進行中
         </button>
         <button
           className={`filter-button ${statusFilter === "closed" ? "active" : ""}`}
           onClick={() => setStatusFilter("closed")}
         >
-          已關閉
+          已結束
         </button>
         <button
           className={`filter-button ${statusFilter === "*" ? "active" : ""}`}
@@ -108,7 +126,7 @@ function ProjectIssuesPage() {
       ) : issues.length === 0 ? (
         <p className="empty-state">此專案目前沒有 Issue</p>
       ) : (
-        <IssueList issues={issues} statuses={statuses} onStatusChange={handleStatusChange} />
+        <IssueList issues={issues} statuses={statuses} onStatusChange={handleStatusChange} priorities={priorities} onPriorityChange={handlePriorityChange} />
       )}
     </div>
   );

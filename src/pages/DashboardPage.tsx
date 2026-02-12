@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { listProjects, listMyIssues, listStatuses, updateIssue, type Project, type Issue, type IdName } from "../lib/api";
+import { listProjects, listMyIssues, listStatuses, listPriorities, updateIssue, type Project, type Issue, type IdName } from "../lib/api";
 import IssueList from "../components/IssueList";
 
 function DashboardPage() {
@@ -8,6 +8,7 @@ function DashboardPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [myIssues, setMyIssues] = useState<Issue[]>([]);
   const [statuses, setStatuses] = useState<IdName[]>([]);
+  const [priorities, setPriorities] = useState<IdName[]>([]);
   const [loading, setLoading] = useState(true);
   const [issuesLoading, setIssuesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,14 +17,16 @@ function DashboardPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [projectList, issueList, statusList] = await Promise.all([
+        const [projectList, issueList, statusList, priorityList] = await Promise.all([
           listProjects(),
           listMyIssues("open"),
           listStatuses(),
+          listPriorities(),
         ]);
         setProjects(projectList);
         setMyIssues(issueList);
         setStatuses(statusList);
+        setPriorities(priorityList);
       } catch (e) {
         setError(String(e));
       } finally {
@@ -49,6 +52,21 @@ function DashboardPage() {
     );
     try {
       await updateIssue(issueId, { status_id: statusId });
+      const updated = await listMyIssues(tab);
+      setMyIssues(updated);
+    } catch (e) {
+      setMyIssues(original);
+      setError(String(e));
+    }
+  }
+
+  async function handlePriorityChange(issueId: number, priorityId: number) {
+    const original = myIssues;
+    setMyIssues((prev) =>
+      prev.map((i) => (i.id === issueId ? { ...i, priority: { ...i.priority, id: priorityId, name: priorities.find((p) => p.id === priorityId)?.name ?? i.priority.name } } : i))
+    );
+    try {
+      await updateIssue(issueId, { priority_id: priorityId });
     } catch (e) {
       setMyIssues(original);
       setError(String(e));
@@ -109,7 +127,7 @@ function DashboardPage() {
               {tab === "open" ? "目前沒有待處理的 Issue" : "目前沒有已完成的 Issue"}
             </p>
           ) : (
-            <IssueList issues={myIssues} showProject statuses={statuses} onStatusChange={handleStatusChange} />
+            <IssueList issues={myIssues} showProject statuses={statuses} onStatusChange={handleStatusChange} priorities={priorities} onPriorityChange={handlePriorityChange} />
           )}
         </section>
       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { getVersion } from "@tauri-apps/api/app";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
 interface Release {
   tag_name: string;
@@ -98,6 +99,18 @@ function SettingsPage() {
           </button>
         </div>
         {updateMsg && <div className="settings-update-msg">{updateMsg}</div>}
+      </section>
+
+      <section className="settings-section">
+        <div className="settings-report-row">
+          <span>遇到問題或有建議？</span>
+          <button
+            className="settings-report-button"
+            onClick={() => openUrl("https://github.com/HoHow/RedmineQuick-releases/issues")}
+          >
+            問題回報
+          </button>
+        </div>
       </section>
 
       <section className="settings-section">

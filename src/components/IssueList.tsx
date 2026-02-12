@@ -7,9 +7,11 @@ interface IssueListProps {
   showProject?: boolean;
   statuses?: IdName[];
   onStatusChange?: (issueId: number, statusId: number) => Promise<void>;
+  priorities?: IdName[];
+  onPriorityChange?: (issueId: number, priorityId: number) => Promise<void>;
 }
 
-function IssueList({ issues, showProject = false, statuses, onStatusChange }: IssueListProps) {
+function IssueList({ issues, showProject = false, statuses, onStatusChange, priorities, onPriorityChange }: IssueListProps) {
   const navigate = useNavigate();
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
@@ -18,6 +20,16 @@ function IssueList({ issues, showProject = false, statuses, onStatusChange }: Is
     setUpdatingId(issue.id);
     try {
       await onStatusChange(issue.id, newStatusId);
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  async function handlePriorityChange(issue: Issue, newPriorityId: number) {
+    if (!onPriorityChange || newPriorityId === issue.priority.id) return;
+    setUpdatingId(issue.id);
+    try {
+      await onPriorityChange(issue.id, newPriorityId);
     } finally {
       setUpdatingId(null);
     }
@@ -47,7 +59,7 @@ function IssueList({ issues, showProject = false, statuses, onStatusChange }: Is
             <td>
               {statuses && onStatusChange ? (
                 <select
-                  className="inline-status-select"
+                  className="inline-select"
                   value={issue.status.id}
                   disabled={updatingId === issue.id}
                   onClick={(e) => e.stopPropagation()}
@@ -61,7 +73,23 @@ function IssueList({ issues, showProject = false, statuses, onStatusChange }: Is
                 issue.status.name
               )}
             </td>
-            <td>{issue.priority.name}</td>
+            <td>
+              {priorities && onPriorityChange ? (
+                <select
+                  className="inline-select"
+                  value={issue.priority.id}
+                  disabled={updatingId === issue.id}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => handlePriorityChange(issue, Number(e.target.value))}
+                >
+                  {priorities.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              ) : (
+                issue.priority.name
+              )}
+            </td>
           </tr>
         ))}
       </tbody>
