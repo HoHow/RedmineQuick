@@ -16,10 +16,13 @@ jobs:
         include:
           - platform: macos-latest
             args: --target aarch64-apple-darwin
+            arch: aarch64
           - platform: macos-latest
             args: --target x86_64-apple-darwin
+            arch: x64
           - platform: windows-latest
             args: ''
+            arch: x64-windows
 
     runs-on: ${{ matrix.platform }}
 
@@ -51,17 +54,52 @@ jobs:
           includeUpdaterJson: false
           args: ${{ matrix.args }}
 
+      # tauri-action 會重新打包 macOS 的 .app.tar.gz，導致原始簽名失效
+      # 這裡重新簽名，確保 updater 能驗證
+      - name: Re-sign updater bundle (macOS)
+        if: matrix.platform == 'macos-latest'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          for f in $(find src-tauri/target -name "*.app.tar.gz" -type f); do
+            echo "Re-signing: $f"
+            npx tauri signer sign "$f"
+            echo "Done: $(ls -la "${f}.sig")"
+          done
+
+      # 收集 updater 所需檔案到扁平目錄，避免 glob 匹配問題
+      - name: Collect updater artifacts
+        shell: bash
+        run: |
+          mkdir -p updater-output
+          ARCH="${{ matrix.arch }}"
+
+          # macOS: sig 檔（用 arch 區分）
+          for f in $(find src-tauri/target -name "*.app.tar.gz.sig" -type f 2>/dev/null); do
+            cp "$f" "updater-output/redminequick_${ARCH}.app.tar.gz.sig"
+            echo "Collected sig: $f"
+          done
+
+          # Windows: nsis.zip + sig
+          for f in $(find src-tauri/target -name "*.nsis.zip" -type f 2>/dev/null); do
+            cp "$f" "updater-output/$(basename "$f")"
+            echo "Collected nsis.zip: $f"
+          done
+          for f in $(find src-tauri/target -name "*.nsis.zip.sig" -type f 2>/dev/null); do
+            cp "$f" "updater-output/$(basename "$f")"
+            echo "Collected nsis.zip.sig: $f"
+          done
+
+          echo "=== Updater output ==="
+          ls -la updater-output/
+
       - name: Upload updater artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: updater-${{ matrix.platform }}-${{ strategy.job-index }}
-          path: |
-            src-tauri/target/**/release/bundle/**/*.sig
-            src-tauri/target/**/release/bundle/**/*.tar.gz
-            src-tauri/target/**/release/bundle/**/*.msi.zip
-            src-tauri/target/**/release/bundle/**/*.msi.zip.sig
-            src-tauri/target/**/release/bundle/**/*.nsis.zip
-            src-tauri/target/**/release/bundle/**/*.nsis.zip.sig
+          name: updater-${{ matrix.arch }}
+          path: updater-output/
           if-no-files-found: ignore
 
   publish:
@@ -89,73 +127,70 @@ jobs:
           gh release download "$TAG" --dir release-assets || true
           ls -la release-assets/
 
+      # 將 Windows nsis.zip 加入 release（updater 需要）
+      - name: Copy updater bundles to release assets
+        run: |
+          for f in updater-artifacts/*.nsis.zip; do
+            [ -f "$f" ] && cp "$f" release-assets/ && echo "Added: $(basename "$f")"
+          done
+
       - name: Generate latest.json
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ github.ref_name }}"
           VERSION="${TAG#v}"
           REPO="HoHow/RedmineQuick-releases"
           PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          # Find signature files
-          AARCH64_SIG=$(find updater-artifacts -name "*.app.tar.gz.sig" -path "*aarch64*" | head -1)
-          X64_MAC_SIG=$(find updater-artifacts -name "*.app.tar.gz.sig" -path "*x86_64*" -o -name "*.app.tar.gz.sig" -path "*x64*" | grep -v aarch64 | head -1)
-          WINDOWS_SIG=$(find updater-artifacts -name "*.nsis.zip.sig" -o -name "*.msi.zip.sig" | head -1)
-
-          echo "Found signatures:"
-          echo "  aarch64 mac: $AARCH64_SIG"
-          echo "  x64 mac: $X64_MAC_SIG"
-          echo "  windows: $WINDOWS_SIG"
-
-          # Read signature contents
-          SIG_AARCH64=""
-          SIG_X64_MAC=""
-          SIG_WINDOWS=""
-
-          if [ -n "$AARCH64_SIG" ] && [ -f "$AARCH64_SIG" ]; then
-            SIG_AARCH64=$(cat "$AARCH64_SIG")
-          fi
-          if [ -n "$X64_MAC_SIG" ] && [ -f "$X64_MAC_SIG" ]; then
-            SIG_X64_MAC=$(cat "$X64_MAC_SIG")
-          fi
-          if [ -n "$WINDOWS_SIG" ] && [ -f "$WINDOWS_SIG" ]; then
-            SIG_WINDOWS=$(cat "$WINDOWS_SIG")
-          fi
-
-          # Determine download URLs
           BASE_URL="https://github.com/$REPO/releases/download/$TAG"
 
-          # Find actual filenames from release assets
-          AARCH64_TAR=$(ls release-assets/ | grep "aarch64.*app.*tar.gz" | head -1)
-          X64_TAR=$(ls release-assets/ | grep "x64.*app.*tar.gz" | head -1)
-          WINDOWS_MSI=$(ls release-assets/ | grep "\.msi$" | head -1)
-          WINDOWS_EXE=$(ls release-assets/ | grep "setup\.exe$" | head -1)
+          # 讀取簽名
+          SIG_AARCH64=$(cat updater-artifacts/redminequick_aarch64.app.tar.gz.sig 2>/dev/null || echo "")
+          SIG_X64_MAC=$(cat updater-artifacts/redminequick_x64.app.tar.gz.sig 2>/dev/null || echo "")
+          SIG_WINDOWS=$(cat updater-artifacts/*.nsis.zip.sig 2>/dev/null || echo "")
 
-          # Build latest.json
+          # Windows nsis.zip 檔名
+          NSIS_ZIP=$(ls updater-artifacts/*.nsis.zip 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "")
+
+          echo "Signatures:"
+          echo "  aarch64: $([ -n "$SIG_AARCH64" ] && echo 'found' || echo 'MISSING')"
+          echo "  x64 mac: $([ -n "$SIG_X64_MAC" ] && echo 'found' || echo 'MISSING')"
+          echo "  windows: $([ -n "$SIG_WINDOWS" ] && echo 'found' || echo 'MISSING')"
+          echo "Windows bundle: $NSIS_ZIP"
+
           cat > release-assets/latest.json << ENDJSON
-          {
-            "version": "$VERSION",
-            "pub_date": "$PUB_DATE",
-            "platforms": {
-              "darwin-aarch64": {
-                "signature": "$SIG_AARCH64",
-                "url": "$BASE_URL/$AARCH64_TAR"
-              },
-              "darwin-x86_64": {
-                "signature": "$SIG_X64_MAC",
-                "url": "$BASE_URL/$X64_TAR"
-              },
-              "windows-x86_64": {
-                "signature": "$SIG_WINDOWS",
-                "url": "$BASE_URL/${WINDOWS_EXE:-$WINDOWS_MSI}"
-              }
-            }
-          }
-          ENDJSON
+{
+  "version": "$VERSION",
+  "pub_date": "$PUB_DATE",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "$SIG_AARCH64",
+      "url": "$BASE_URL/redminequick_aarch64.app.tar.gz"
+    },
+    "darwin-x86_64": {
+      "signature": "$SIG_X64_MAC",
+      "url": "$BASE_URL/redminequick_x64.app.tar.gz"
+    },
+    "windows-x86_64": {
+      "signature": "$SIG_WINDOWS",
+      "url": "$BASE_URL/$NSIS_ZIP"
+    }
+  }
+}
+ENDJSON
 
           echo "Generated latest.json:"
           cat release-assets/latest.json
+
+      # 從 CHANGELOG.md 抽取當前版本的更新紀錄
+      - name: Extract changelog
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          awk "/^## v${VERSION}/,/^## v/" CHANGELOG.md | sed '1d' | sed '/^## v/,$d' > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "RedmineQuick $TAG" > release-notes.md
+          fi
+          echo "Release notes:"
+          cat release-notes.md
 
       - name: Publish to public releases repo
         env:
@@ -163,13 +198,18 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           REPO="HoHow/RedmineQuick-releases"
-          # Create release on public repo (or update if exists)
           gh release create "$TAG" \
             --repo "$REPO" \
             --title "RedmineQuick $TAG" \
-            --notes "RedmineQuick $TAG" \
+            --notes-file release-notes.md \
             release-assets/* \
-            || gh release upload "$TAG" \
-              --repo "$REPO" \
-              --clobber \
-              release-assets/*
+            2>/dev/null || {
+              gh release edit "$TAG" \
+                --repo "$REPO" \
+                --title "RedmineQuick $TAG" \
+                --notes-file release-notes.md
+              gh release upload "$TAG" \
+                --repo "$REPO" \
+                --clobber \
+                release-assets/*
+            }
