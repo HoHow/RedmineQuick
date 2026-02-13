@@ -11,7 +11,7 @@ function LoginPage() {
 
   const savedUrl = localStorage.getItem(REMEMBERED_URL_KEY);
   const [url, setUrl] = useState(config?.url ?? savedUrl ?? "");
-  const [apiKey, setApiKey] = useState(config?.apiKey ?? "");
+  const [apiKey, setApiKey] = useState("");
   const [rememberUrl, setRememberUrl] = useState(savedUrl !== null);
   const [logging, setLogging] = useState(false);
   const [error, setError] = useState<string | null>(null);

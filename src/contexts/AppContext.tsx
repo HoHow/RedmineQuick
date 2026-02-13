@@ -21,7 +21,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadConfig()
       .then(async (cfg) => {
         setConfig(cfg);
-        if (cfg) {
+        if (cfg && cfg.apiKey) {
           try {
             const u = await testConnection(cfg.url, cfg.apiKey);
             setUser(u);

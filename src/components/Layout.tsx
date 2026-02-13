@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { useApp } from "../contexts/AppContext";
+import { saveConfig } from "../lib/api";
 import { useNotifications, clearNotificationStorage } from "../contexts/NotificationContext";
+
+const REMEMBERED_URL_KEY = "rememberedRedmineUrl";
 
 function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useApp();
+  const { user, setConfig, logout } = useApp();
   const isLoginPage = location.pathname === "/login";
 
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -77,9 +80,13 @@ function Layout() {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   }
 
-  function handleLogout() {
+  async function handleLogout() {
     setDropdownOpen(false);
     clearNotificationStorage();
+    const rememberedUrl = localStorage.getItem(REMEMBERED_URL_KEY);
+    const urlToKeep = rememberedUrl ?? "";
+    await saveConfig(urlToKeep, "");
+    setConfig({ url: urlToKeep, apiKey: "" });
     logout();
     navigate("/login");
   }
