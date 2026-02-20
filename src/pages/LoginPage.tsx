@@ -36,10 +36,22 @@ function LoginPage() {
     setLogging(true);
     setError(null);
 
+    let finalUrl = url.trim();
+    if (!/^https?:\/\//i.test(finalUrl)) {
+      finalUrl = `https://${finalUrl}`;
+      setUrl(finalUrl);
+      if (rememberUrl) localStorage.setItem(REMEMBERED_URL_KEY, finalUrl);
+    }
+    if (/^http:\/\//i.test(finalUrl)) {
+      setError("基於安全考量，僅支援 HTTPS 連線");
+      setLogging(false);
+      return;
+    }
+
     try {
-      const user = await testConnection(url, apiKey);
-      await saveConfig(url, apiKey);
-      setConfig({ url, apiKey });
+      const user = await testConnection(finalUrl, apiKey);
+      await saveConfig(finalUrl, apiKey);
+      setConfig({ url: finalUrl, apiKey });
       setUser(user);
       navigate("/");
     } catch (e) {
