@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { getIssue, updateIssue, listStatuses, listPriorities, listTrackers, listMemberships, downloadAttachment, saveAttachment, type Issue, type IdName, type IssueParams, type Membership, type Attachment } from "../lib/api";
-import IssueForm from "../components/IssueForm";
+import { getIssue, updateIssue, uploadAttachment, listStatuses, listPriorities, listTrackers, listMemberships, downloadAttachment, saveAttachment, type Issue, type IdName, type IssueParams, type Membership, type Attachment, type UploadInfo } from "../lib/api";
+import IssueForm, { type PendingFile } from "../components/IssueForm";
 
 const FIELD_LABELS: Record<string, string> = {
   status_id: "狀態",
@@ -218,6 +218,7 @@ function IssueDetailPage() {
   const [lookup, setLookup] = useState<LookupMap>({});
   const [dueDateEditing, setDueDateEditing] = useState(false);
   const [updatedField, setUpdatedField] = useState<string | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   async function fetchIssue() {
     if (!issueId) return;
@@ -269,8 +270,18 @@ function IssueDetailPage() {
     }
   }
 
-  async function handleEditSubmit(params: IssueParams) {
+  async function handleEditSubmit(params: IssueParams, files: PendingFile[]) {
     if (!issueId) return;
+    if (files.length > 0) {
+      const uploads: UploadInfo[] = [];
+      for (let i = 0; i < files.length; i++) {
+        setUploadStatus(`上傳中 (${i + 1}/${files.length})...`);
+        const info = await uploadAttachment(files[i].path);
+        uploads.push(info);
+      }
+      setUploadStatus(null);
+      params.uploads = uploads;
+    }
     await updateIssue(Number(issueId), params);
     setEditing(false);
     setLoading(true);
@@ -293,6 +304,7 @@ function IssueDetailPage() {
     return (
       <div className="issue-detail-page">
         <h2>編輯 Issue #{issue.id}</h2>
+        {uploadStatus && <div className="loading">{uploadStatus}</div>}
         <IssueForm
           projectId={issue.project.id}
           initialValues={{
