@@ -142,6 +142,35 @@ pub struct IssueParams {
     pub watcher_user_ids: Option<Vec<u64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uploads: Option<Vec<UploadInfo>>,
+}
+
+// POST /uploads.json response
+#[derive(Debug, Clone, Deserialize)]
+pub struct UploadResponse {
+    pub upload: UploadToken,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UploadToken {
+    pub token: String,
+}
+
+// Attachment upload info for issue create/update payload
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UploadInfo {
+    pub token: String,
+    pub filename: String,
+    pub content_type: String,
+}
+
+// File metadata for pending upload display
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileMetadata {
+    pub name: String,
+    pub size: u64,
+    pub path: String,
 }
 
 // POST /time_entries.json
@@ -198,4 +227,97 @@ pub struct Membership {
     pub id: u64,
     pub user: Option<IdName>,
     pub roles: Vec<IdName>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn upload_response_deserialize() {
+        let json = r#"{"upload":{"token":"abc123.def456"}}"#;
+        let resp: UploadResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(resp.upload.token, "abc123.def456");
+    }
+
+    #[test]
+    fn upload_info_serialize() {
+        let info = UploadInfo {
+            token: "abc123".to_string(),
+            filename: "test.png".to_string(),
+            content_type: "image/png".to_string(),
+        };
+        let json = serde_json::to_value(&info).unwrap();
+        assert_eq!(json["token"], "abc123");
+        assert_eq!(json["filename"], "test.png");
+        assert_eq!(json["content_type"], "image/png");
+    }
+
+    #[test]
+    fn issue_params_with_uploads_serialize() {
+        let params = IssueParams {
+            project_id: Some(1),
+            tracker_id: None,
+            subject: Some("test".to_string()),
+            description: None,
+            status_id: None,
+            priority_id: None,
+            assigned_to_id: None,
+            parent_issue_id: None,
+            start_date: None,
+            due_date: None,
+            estimated_hours: None,
+            done_ratio: None,
+            watcher_user_ids: None,
+            notes: None,
+            uploads: Some(vec![UploadInfo {
+                token: "tok1".to_string(),
+                filename: "doc.pdf".to_string(),
+                content_type: "application/pdf".to_string(),
+            }]),
+        };
+        let json = serde_json::to_value(&params).unwrap();
+        assert_eq!(json["project_id"], 1);
+        assert_eq!(json["subject"], "test");
+        let uploads = json["uploads"].as_array().unwrap();
+        assert_eq!(uploads.len(), 1);
+        assert_eq!(uploads[0]["token"], "tok1");
+        assert_eq!(uploads[0]["filename"], "doc.pdf");
+    }
+
+    #[test]
+    fn issue_params_without_uploads_omits_field() {
+        let params = IssueParams {
+            project_id: Some(1),
+            tracker_id: None,
+            subject: Some("test".to_string()),
+            description: None,
+            status_id: None,
+            priority_id: None,
+            assigned_to_id: None,
+            parent_issue_id: None,
+            start_date: None,
+            due_date: None,
+            estimated_hours: None,
+            done_ratio: None,
+            watcher_user_ids: None,
+            notes: None,
+            uploads: None,
+        };
+        let json = serde_json::to_value(&params).unwrap();
+        assert!(json.get("uploads").is_none());
+    }
+
+    #[test]
+    fn file_metadata_serialize() {
+        let meta = FileMetadata {
+            name: "photo.jpg".to_string(),
+            size: 1024,
+            path: "/tmp/photo.jpg".to_string(),
+        };
+        let json = serde_json::to_value(&meta).unwrap();
+        assert_eq!(json["name"], "photo.jpg");
+        assert_eq!(json["size"], 1024);
+        assert_eq!(json["path"], "/tmp/photo.jpg");
+    }
 }
