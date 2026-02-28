@@ -256,6 +256,32 @@ impl RedmineClient {
         Ok(resp.memberships)
     }
 
+    pub async fn upload_file(&self, file_bytes: Vec<u8>, filename: &str) -> Result<String, String> {
+        let url = format!("{}/uploads.json?filename={}", self.base_url, filename);
+        let response = self
+            .http
+            .post(&url)
+            .header("X-Redmine-API-Key", &self.api_key)
+            .header("Content-Type", "application/octet-stream")
+            .body(file_bytes)
+            .send()
+            .await
+            .map_err(|e| format!("上傳檔案失敗：{}", e))?;
+
+        if !response.status().is_success() {
+            let status = response.status().as_u16();
+            let body = response.text().await.unwrap_or_default();
+            return Err(format!("上傳檔案失敗 ({}): {}", status, body));
+        }
+
+        let upload_resp: UploadResponse = response
+            .json()
+            .await
+            .map_err(|e| format!("解析上傳回應失敗：{}", e))?;
+
+        Ok(upload_resp.upload.token)
+    }
+
     pub async fn download_attachment_base64(&self, url: &str) -> Result<String, String> {
         let response = self
             .http
@@ -297,5 +323,53 @@ impl RedmineClient {
             .await
             .map(|b| b.to_vec())
             .map_err(|e| format!("讀取附件內容失敗：{}", e))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn upload_file_success() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("POST", "/uploads.json?filename=test.txt")
+            .match_header("Content-Type", "application/octet-stream")
+            .match_header("X-Redmine-API-Key", "test-key")
+            .match_body("hello world")
+            .with_status(201)
+            .with_header("Content-Type", "application/json")
+            .with_body(r#"{"upload":{"token":"abc123.456"}}"#)
+            .create_async()
+            .await;
+
+        let client = RedmineClient::new(&server.url(), "test-key");
+        let token = client
+            .upload_file(b"hello world".to_vec(), "test.txt")
+            .await
+            .unwrap();
+
+        assert_eq!(token, "abc123.456");
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn upload_file_server_error() {
+        let mut server = mockito::Server::new_async().await;
+        server
+            .mock("POST", "/uploads.json?filename=big.bin")
+            .with_status(413)
+            .with_body("File too large")
+            .create_async()
+            .await;
+
+        let client = RedmineClient::new(&server.url(), "test-key");
+        let result = client
+            .upload_file(vec![0u8; 100], "big.bin")
+            .await;
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("413"));
     }
 }

@@ -1117,3 +1117,76 @@ button:disabled {
   font-size: 0.75rem;
   color: var(--color-text-tertiary);
 }
+
+/* Attachment upload drop zone */
+.attachment-drop-zone {
+  border: 2px dashed var(--color-border);
+  border-radius: 6px;
+  padding: 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.attachment-drop-zone:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-bg-tertiary);
+}
+
+.attachment-drop-zone.drag-over {
+  border-color: var(--color-primary);
+  background-color: var(--color-bg-tertiary);
+}
+
+.attachment-drop-hint {
+  color: var(--color-text-tertiary);
+  font-size: 0.85rem;
+}
+
+.pending-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.pending-file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg-tertiary);
+  font-size: 0.85rem;
+}
+
+.pending-file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pending-file-size {
+  color: var(--color-text-tertiary);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.pending-file-item button {
+  padding: 0.1rem 0.4rem;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+}
+
+.pending-file-item button:hover {
+  color: var(--color-error);
+  border: none;
+}

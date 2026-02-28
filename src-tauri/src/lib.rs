@@ -29,6 +29,8 @@ pub fn run() {
             commands::issues::list_statuses,
             commands::issues::list_priorities,
             commands::issues::list_memberships,
+            commands::issues::upload_attachment,
+            commands::issues::get_file_metadata,
             commands::issues::download_attachment,
             commands::issues::save_attachment,
             commands::time_entries::create_time_entry,
