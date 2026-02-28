@@ -66,6 +66,18 @@ export interface Issue {
   attachments: Attachment[] | null;
 }
 
+export interface UploadInfo {
+  token: string;
+  filename: string;
+  content_type: string;
+}
+
+export interface FileMetadata {
+  name: string;
+  size: number;
+  path: string;
+}
+
 export interface IssueParams {
   tracker_id?: number;
   subject?: string;
@@ -80,6 +92,7 @@ export interface IssueParams {
   done_ratio?: number;
   watcher_user_ids?: number[];
   notes?: string;
+  uploads?: UploadInfo[];
 }
 
 export interface TimeEntryParams {
@@ -164,6 +177,15 @@ export function listActivities(): Promise<IdName[]> {
 
 export function listMemberships(projectId: number): Promise<Membership[]> {
   return invoke("list_memberships", { projectId });
+}
+
+// Upload
+export function uploadAttachment(filePath: string): Promise<UploadInfo> {
+  return invoke("upload_attachment", { filePath });
+}
+
+export function getFileMetadata(filePath: string): Promise<FileMetadata> {
+  return invoke("get_file_metadata", { filePath });
 }
 
 // Attachments
