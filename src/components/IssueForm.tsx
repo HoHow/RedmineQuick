@@ -1,22 +1,38 @@
 import { useState, useEffect, useRef } from "react";
+import { open } from "@tauri-apps/plugin-dialog";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import {
   listTrackers,
   listStatuses,
   listPriorities,
   listMemberships,
+  getFileMetadata,
   type IdName,
   type Membership,
   type IssueParams,
+  type FileMetadata,
 } from "../lib/api";
 import { useApp } from "../contexts/AppContext";
+
+export interface PendingFile {
+  path: string;
+  name: string;
+  size: number;
+}
 
 interface IssueFormProps {
   projectId: number;
   initialValues?: IssueParams;
-  onSubmit: (params: IssueParams) => Promise<void>;
-  onSubmitContinue?: (params: IssueParams) => Promise<void>;
+  onSubmit: (params: IssueParams, files: PendingFile[]) => Promise<void>;
+  onSubmitContinue?: (params: IssueParams, files: PendingFile[]) => Promise<void>;
   onCancel: () => void;
   submitLabel: string;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function IssueForm({ projectId, initialValues, onSubmit, onSubmitContinue, onCancel, submitLabel }: IssueFormProps) {
@@ -46,6 +62,8 @@ function IssueForm({ projectId, initialValues, onSubmit, onSubmitContinue, onCan
   const [doneRatio, setDoneRatio] = useState<number>(initialValues?.done_ratio ?? 0);
   const [watcherUserIds, setWatcherUserIds] = useState<number[]>(initialValues?.watcher_user_ids ?? []);
   const [notes, setNotes] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
   const continueRef = useRef(false);
 
   useEffect(() => {
@@ -84,6 +102,52 @@ function IssueForm({ projectId, initialValues, onSubmit, onSubmitContinue, onCan
     fetchOptions();
   }, [projectId]);
 
+  useEffect(() => {
+    const webview = getCurrentWebview();
+    const unlistenPromise = webview.onDragDropEvent(async (event) => {
+      if (event.payload.type === "enter" || event.payload.type === "over") {
+        setIsDragOver(true);
+      } else if (event.payload.type === "leave") {
+        setIsDragOver(false);
+      } else if (event.payload.type === "drop") {
+        setIsDragOver(false);
+        await addFilesByPath(event.payload.paths);
+      }
+    });
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, []);
+
+  async function addFilesByPath(paths: string[]) {
+    const newFiles: PendingFile[] = [];
+    for (const p of paths) {
+      const existing = pendingFiles.find((f) => f.path === p);
+      if (existing) continue;
+      try {
+        const meta: FileMetadata = await getFileMetadata(p);
+        newFiles.push({ path: meta.path, name: meta.name, size: meta.size });
+      } catch {
+        // skip files that can't be read
+      }
+    }
+    if (newFiles.length > 0) {
+      setPendingFiles((prev) => [...prev, ...newFiles]);
+    }
+  }
+
+  async function handlePickFiles() {
+    const selected = await open({ multiple: true, title: "選擇附件" });
+    if (!selected) return;
+    const paths = Array.isArray(selected) ? selected : [selected];
+    await addFilesByPath(paths);
+  }
+
+  function handleRemoveFile(path: string) {
+    setPendingFiles((prev) => prev.filter((f) => f.path !== path));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
@@ -107,16 +171,17 @@ function IssueForm({ projectId, initialValues, onSubmit, onSubmitContinue, onCan
 
     try {
       if (continueRef.current && onSubmitContinue) {
-        await onSubmitContinue(params);
+        await onSubmitContinue(params, pendingFiles);
         setSubject("");
         setDescription("");
         setDueDate("");
         setEstimatedHours("");
         setDoneRatio(0);
         setNotes("");
+        setPendingFiles([]);
         window.scrollTo(0, 0);
       } else {
-        await onSubmit(params);
+        await onSubmit(params, pendingFiles);
       }
     } catch (e) {
       setError(String(e));
@@ -268,6 +333,31 @@ function IssueForm({ projectId, initialValues, onSubmit, onSubmitContinue, onCan
           />
         </div>
       )}
+
+      <div className="form-group">
+        <label>附件</label>
+        <div
+          className={`attachment-drop-zone${isDragOver ? " drag-over" : ""}`}
+          onClick={handlePickFiles}
+        >
+          {pendingFiles.length === 0 ? (
+            <span className="attachment-drop-hint">點擊選擇檔案，或拖曳檔案至此處</span>
+          ) : (
+            <span className="attachment-drop-hint">點擊新增更多檔案，或拖曳檔案至此處</span>
+          )}
+        </div>
+        {pendingFiles.length > 0 && (
+          <div className="pending-file-list">
+            {pendingFiles.map((f) => (
+              <div key={f.path} className="pending-file-item">
+                <span className="pending-file-name">{f.name}</span>
+                <span className="pending-file-size">{formatFileSize(f.size)}</span>
+                <button type="button" onClick={() => handleRemoveFile(f.path)}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {userMembers.length > 0 && (
         <div className="form-group">
