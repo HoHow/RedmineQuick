@@ -5,13 +5,14 @@ import type { Issue, IdName } from "../lib/api";
 interface IssueListProps {
   issues: Issue[];
   showProject?: boolean;
+  showAssignee?: boolean;
   statuses?: IdName[];
   onStatusChange?: (issueId: number, statusId: number) => Promise<void>;
   priorities?: IdName[];
   onPriorityChange?: (issueId: number, priorityId: number) => Promise<void>;
 }
 
-function IssueList({ issues, showProject = false, statuses, onStatusChange, priorities, onPriorityChange }: IssueListProps) {
+function IssueList({ issues, showProject = false, showAssignee = false, statuses, onStatusChange, priorities, onPriorityChange }: IssueListProps) {
   const navigate = useNavigate();
   const [updatingId, setUpdatingId] = useState<number | null>(null);
 
@@ -42,6 +43,7 @@ function IssueList({ issues, showProject = false, statuses, onStatusChange, prio
           <th>#</th>
           {showProject && <th>專案</th>}
           <th>主旨</th>
+          {showAssignee && <th>被分派者</th>}
           <th>狀態</th>
           <th>優先權</th>
         </tr>
@@ -56,6 +58,7 @@ function IssueList({ issues, showProject = false, statuses, onStatusChange, prio
             <td>{issue.id}</td>
             {showProject && <td>{issue.project.name}</td>}
             <td className="issue-subject">{issue.subject}</td>
+            {showAssignee && <td>{issue.assigned_to?.name ?? "未指派"}</td>}
             <td>
               {statuses && onStatusChange ? (
                 <select

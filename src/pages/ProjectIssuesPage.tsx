@@ -126,7 +126,7 @@ function ProjectIssuesPage() {
       ) : issues.length === 0 ? (
         <p className="empty-state">此專案目前沒有 Issue</p>
       ) : (
-        <IssueList issues={issues} statuses={statuses} onStatusChange={handleStatusChange} priorities={priorities} onPriorityChange={handlePriorityChange} />
+        <IssueList issues={issues} showAssignee statuses={statuses} onStatusChange={handleStatusChange} priorities={priorities} onPriorityChange={handlePriorityChange} />
       )}
     </div>
   );
