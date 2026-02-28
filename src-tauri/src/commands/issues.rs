@@ -3,7 +3,7 @@ use tauri_plugin_dialog::DialogExt;
 
 use crate::config;
 use crate::redmine::client::RedmineClient;
-use crate::redmine::models::{IdName, Issue, IssueParams, Membership};
+use crate::redmine::models::{FileMetadata, IdName, Issue, IssueParams, Membership, UploadInfo};
 
 fn get_client(app: &AppHandle) -> Result<RedmineClient, String> {
     let cfg = config::load_config(app)?
@@ -84,6 +84,63 @@ pub async fn list_memberships(
 }
 
 #[tauri::command]
+pub async fn upload_attachment(app: AppHandle, file_path: String) -> Result<UploadInfo, String> {
+    let client = get_client(&app)?;
+    let path = std::path::Path::new(&file_path);
+
+    if !path.exists() {
+        return Err(format!("檔案不存在：{}", file_path));
+    }
+
+    let filename = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("file")
+        .to_string();
+
+    let content_type = mime_guess::from_path(path)
+        .first_or_octet_stream()
+        .to_string();
+
+    let file_bytes = tokio::fs::read(path)
+        .await
+        .map_err(|e| format!("讀取檔案失敗：{}", e))?;
+
+    let token = client.upload_file(file_bytes, &filename).await?;
+
+    Ok(UploadInfo {
+        token,
+        filename,
+        content_type,
+    })
+}
+
+#[tauri::command]
+pub async fn get_file_metadata(file_path: String) -> Result<FileMetadata, String> {
+    let path = std::path::Path::new(&file_path);
+
+    if !path.exists() {
+        return Err(format!("檔案不存在：{}", file_path));
+    }
+
+    let metadata = tokio::fs::metadata(path)
+        .await
+        .map_err(|e| format!("讀取檔案資訊失敗：{}", e))?;
+
+    let name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("file")
+        .to_string();
+
+    Ok(FileMetadata {
+        name,
+        size: metadata.len(),
+        path: file_path,
+    })
+}
+
+#[tauri::command]
 pub async fn download_attachment(app: AppHandle, url: String) -> Result<String, String> {
     let client = get_client(&app)?;
     client.download_attachment_base64(&url).await
@@ -113,5 +170,32 @@ pub async fn save_attachment(app: AppHandle, url: String, filename: String) -> R
         Ok(())
     } else {
         Ok(()) // user cancelled
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn get_file_metadata_success() {
+        let dir = tempfile::tempdir().unwrap();
+        let file_path = dir.path().join("test_doc.pdf");
+        std::fs::write(&file_path, "hello world 12345").unwrap();
+
+        let result = get_file_metadata(file_path.to_str().unwrap().to_string())
+            .await
+            .unwrap();
+
+        assert_eq!(result.name, "test_doc.pdf");
+        assert_eq!(result.size, 17);
+        assert_eq!(result.path, file_path.to_str().unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_file_metadata_not_found() {
+        let result = get_file_metadata("/nonexistent/file.txt".to_string()).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("檔案不存在"));
     }
 }
