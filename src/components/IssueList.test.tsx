@@ -21,6 +21,7 @@ const baseIssue: Issue = {
   done_ratio: 0,
   journals: [],
   attachments: [],
+  watchers: null,
 };
 
 function renderIssueList(props: Partial<Parameters<typeof IssueList>[0]> = {}) {
