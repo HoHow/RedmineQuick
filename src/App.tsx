@@ -9,6 +9,7 @@ import IssueCreatePage from "./pages/IssueCreatePage";
 import TimeEntryPage from "./pages/TimeEntryPage";
 import SettingsPage from "./pages/SettingsPage";
 import { NotificationProvider } from "./contexts/NotificationContext";
+import { SearchProvider } from "./contexts/SearchContext";
 import UpdateChecker from "./components/UpdateChecker";
 import "./App.css";
 
@@ -45,8 +46,10 @@ function App() {
     <BrowserRouter>
       <AppProvider>
         <NotificationProvider>
-          <UpdateChecker />
-          <AppRoutes />
+          <SearchProvider>
+            <UpdateChecker />
+            <AppRoutes />
+          </SearchProvider>
         </NotificationProvider>
       </AppProvider>
     </BrowserRouter>

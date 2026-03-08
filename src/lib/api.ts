@@ -141,6 +141,10 @@ export function listProjectIssues(projectId: number, status: string = "open"): P
   return invoke("list_project_issues", { projectId, status });
 }
 
+export function searchIssues(query: string, projectId?: number): Promise<Issue[]> {
+  return invoke("search_issues", { query, projectId });
+}
+
 export function getIssue(issueId: number): Promise<Issue> {
   return invoke("get_issue", { issueId });
 }

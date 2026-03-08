@@ -182,6 +182,23 @@ impl RedmineClient {
         Ok(resp.issues)
     }
 
+    pub async fn search_issues(
+        &self,
+        query: &str,
+        project_id: Option<u64>,
+    ) -> Result<Vec<Issue>, String> {
+        let mut params: Vec<(&str, String)> = vec![
+            ("subject", format!("~{}", query)),
+            ("limit", "10".to_string()),
+        ];
+        if let Some(pid) = project_id {
+            params.push(("project_id", pid.to_string()));
+        }
+        let param_refs: Vec<(&str, &str)> = params.iter().map(|(k, v)| (*k, v.as_str())).collect();
+        let resp: IssuesResponse = self.get_with_params("/issues.json", &param_refs).await?;
+        Ok(resp.issues)
+    }
+
     pub async fn get_issue(&self, id: u64) -> Result<Issue, String> {
         let path = format!("/issues/{}.json?include=watchers,journals,attachments", id);
         let resp: IssueResponse = self.get(&path).await?;
