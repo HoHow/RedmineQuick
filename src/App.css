@@ -712,6 +712,7 @@ button:disabled {
   color: var(--color-text-secondary);
   white-space: pre-wrap;
   line-height: 1.5;
+  position: relative;
 }
 
 .description {
@@ -1323,4 +1324,68 @@ button:disabled {
 .pending-file-item button:hover {
   color: var(--color-error);
   border: none;
+}
+
+/* Note form */
+.note-form {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.note-form textarea {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.note-form textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.note-form-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Section header with quote button */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-header h3 {
+  margin: 0;
+}
+
+/* Quote button */
+.quote-button {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.quote-button:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text);
+}
+
+.journal-notes .quote-button {
+  float: right;
+  margin-top: -0.2rem;
 }

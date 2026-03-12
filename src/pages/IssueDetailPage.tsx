@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { getIssue, updateIssue, uploadAttachment, listStatuses, listPriorities, listTrackers, listMemberships, downloadAttachment, saveAttachment, type Issue, type IdName, type IssueParams, type Membership, type Attachment, type UploadInfo } from "../lib/api";
 import IssueForm, { type PendingFile } from "../components/IssueForm";
+import NoteForm from "../components/NoteForm";
 
 const FIELD_LABELS: Record<string, string> = {
   status_id: "狀態",
@@ -142,7 +143,7 @@ function ImageThumbnailCached({ attachment, onLoad }: { attachment: Attachment; 
   return <img className="attachment-thumb" src={src} alt={attachment.filename} />;
 }
 
-function JournalSection({ issue, lookup }: { issue: Issue; lookup: LookupMap }) {
+function JournalSection({ issue, lookup, onQuote }: { issue: Issue; lookup: LookupMap; onQuote: (text: string) => void }) {
   const [tab, setTab] = useState<"all" | "notes" | "changes">("all");
 
   const allJournals = issue.journals ?? [];
@@ -199,7 +200,12 @@ function JournalSection({ issue, lookup }: { issue: Issue; lookup: LookupMap }) 
                 })}
               </ul>
             )}
-            {j.notes && <div className="journal-notes">{j.notes}</div>}
+            {j.notes && (
+              <div className="journal-notes">
+                {j.notes}
+                <button className="quote-button" onClick={() => onQuote(j.notes!)}>引用</button>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -219,6 +225,8 @@ function IssueDetailPage() {
   const [dueDateEditing, setDueDateEditing] = useState(false);
   const [updatedField, setUpdatedField] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [pendingQuote, setPendingQuote] = useState<string | undefined>(undefined);
+  const noteFormRef = useRef<HTMLDivElement>(null);
 
   async function fetchIssue() {
     if (!issueId) return;
@@ -268,6 +276,11 @@ function IssueDetailPage() {
     } catch (e) {
       setError(String(e));
     }
+  }
+
+  function handleQuote(text: string) {
+    setPendingQuote(text);
+    noteFormRef.current?.scrollIntoView({ behavior: "smooth" });
   }
 
   async function handleEditSubmit(params: IssueParams, files: PendingFile[]) {
@@ -440,13 +453,24 @@ function IssueDetailPage() {
 
         {issue.description && (
           <div className="detail-section">
-            <h3>概述</h3>
+            <div className="section-header">
+              <h3>概述</h3>
+              <button className="quote-button" onClick={() => handleQuote(issue.description!)}>引用</button>
+            </div>
             <div className="description">{issue.description}</div>
           </div>
         )}
 
         <AttachmentSection issue={issue} />
-        <JournalSection issue={issue} lookup={lookup} />
+        <JournalSection issue={issue} lookup={lookup} onQuote={handleQuote} />
+        <div ref={noteFormRef}>
+          <NoteForm
+            issueId={issue.id}
+            onNoteAdded={fetchIssue}
+            pendingQuote={pendingQuote}
+            onQuoteConsumed={() => setPendingQuote(undefined)}
+          />
+        </div>
       </div>
     </div>
   );
