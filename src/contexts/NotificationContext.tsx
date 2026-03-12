@@ -5,9 +5,11 @@ import { useNavigate } from "react-router";
 
 interface IssueNotification {
   id: string;
+  type: "new-issue" | "new-comment";
   issueId: number;
   subject: string;
   projectName: string;
+  authorName?: string;
   createdAt: string;
   read: boolean;
 }
@@ -16,6 +18,13 @@ interface NewIssueEvent {
   issueId: number;
   subject: string;
   projectName: string;
+}
+
+interface NewCommentEvent {
+  issueId: number;
+  subject: string;
+  projectName: string;
+  authorName: string;
 }
 
 interface NotificationContextType {
@@ -50,26 +59,45 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // 監聽 Rust 端 emit 的 new-issue 事件
   useEffect(() => {
-    const unlisten = listen<NewIssueEvent>("new-issue", (event) => {
+    function addNotification(notif: IssueNotification) {
+      setNotifications((prev) => {
+        const updated = [notif, ...prev].slice(0, MAX_NOTIFICATIONS);
+        saveToStorage(updated);
+        return updated;
+      });
+    }
+
+    const unlistenIssue = listen<NewIssueEvent>("new-issue", (event) => {
       const { issueId, subject, projectName } = event.payload;
-      const notification: IssueNotification = {
+      addNotification({
         id: `${issueId}-${Date.now()}`,
+        type: "new-issue",
         issueId,
         subject,
         projectName,
         createdAt: new Date().toISOString(),
         read: false,
-      };
-      setNotifications((prev) => {
-        const updated = [notification, ...prev].slice(0, MAX_NOTIFICATIONS);
-        saveToStorage(updated);
-        return updated;
       });
     });
+
+    const unlistenComment = listen<NewCommentEvent>("new-comment", (event) => {
+      const { issueId, subject, projectName, authorName } = event.payload;
+      addNotification({
+        id: `comment-${issueId}-${Date.now()}`,
+        type: "new-comment",
+        issueId,
+        subject,
+        projectName,
+        authorName,
+        createdAt: new Date().toISOString(),
+        read: false,
+      });
+    });
+
     return () => {
-      unlisten.then((fn) => fn());
+      unlistenIssue.then((fn) => fn());
+      unlistenComment.then((fn) => fn());
     };
   }, []);
 

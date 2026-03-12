@@ -18,19 +18,17 @@ function NoteForm({ issueId, onNoteAdded, pendingQuote, onQuoteConsumed }: NoteF
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const lastQuoteRef = useRef<string | undefined>(undefined);
 
   const canSubmit = notes.trim().length > 0 && !submitting;
 
   useEffect(() => {
-    if (pendingQuote && pendingQuote !== lastQuoteRef.current) {
-      lastQuoteRef.current = pendingQuote;
+    if (pendingQuote) {
       const quoted = formatQuote(pendingQuote);
       setNotes((prev) => prev + quoted);
       textareaRef.current?.focus();
       onQuoteConsumed?.();
     }
-  }, [pendingQuote, onQuoteConsumed]);
+  }, [pendingQuote]);
 
   async function handleSubmit() {
     if (!canSubmit) return;

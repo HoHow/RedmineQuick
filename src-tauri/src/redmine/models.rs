@@ -65,6 +65,7 @@ pub struct Issue {
     pub due_date: Option<String>,
     pub estimated_hours: Option<f64>,
     pub done_ratio: u32,
+    pub updated_on: Option<String>,
     pub watchers: Option<Vec<IdName>>,
     pub journals: Option<Vec<Journal>>,
     pub attachments: Option<Vec<Attachment>>,

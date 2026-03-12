@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::time::Duration;
 
 use serde::Serialize;
@@ -18,16 +18,34 @@ pub struct NewIssueEvent {
     pub project_name: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NewCommentEvent {
+    pub issue_id: u64,
+    pub subject: String,
+    pub project_name: String,
+    pub author_name: String,
+}
+
 pub fn start_polling(app_handle: AppHandle) {
     tauri::async_runtime::spawn(async move {
-        let mut known_ids: HashSet<u64> = HashSet::new();
+        // ID → updated_on
+        let mut known_issues: HashMap<u64, String> = HashMap::new();
         let mut is_first_run = true;
+        let mut current_user_id: Option<u64> = None;
 
         loop {
-            // 讀取 config
             let config = config::load_config(&app_handle);
             if let Ok(Some(cfg)) = config {
                 let client = RedmineClient::new(&cfg.url, &cfg.api_key);
+
+                // Get current user ID on first successful run
+                if current_user_id.is_none() {
+                    if let Ok(user) = client.get_current_user().await {
+                        current_user_id = Some(user.id);
+                    }
+                }
+
                 let params = [
                     ("assigned_to_id", "me"),
                     ("status_id", "open"),
@@ -37,50 +55,56 @@ pub fn start_polling(app_handle: AppHandle) {
 
                 match client.list_issues(&params).await {
                     Ok(issues) => {
-                        let current_ids: HashSet<u64> =
-                            issues.iter().map(|i| i.id).collect();
-
                         if is_first_run {
-                            // 首次建立 baseline，不通知
-                            known_ids = current_ids;
+                            // Build baseline, no notifications
+                            for issue in &issues {
+                                let updated = issue.updated_on.clone().unwrap_or_default();
+                                known_issues.insert(issue.id, updated);
+                            }
                             is_first_run = false;
                         } else {
-                            // 找出新 Issue
                             for issue in &issues {
-                                if !known_ids.contains(&issue.id) {
+                                let updated = issue.updated_on.clone().unwrap_or_default();
+
+                                if let Some(prev_updated) = known_issues.get(&issue.id) {
+                                    // Existing issue — check if updated_on changed
+                                    if *prev_updated != updated {
+                                        check_new_comment(
+                                            &client,
+                                            &app_handle,
+                                            issue.id,
+                                            &issue.subject,
+                                            &issue.project.name,
+                                            current_user_id,
+                                        )
+                                        .await;
+                                    }
+                                } else {
+                                    // New issue
                                     let event = NewIssueEvent {
                                         issue_id: issue.id,
                                         subject: issue.subject.clone(),
                                         project_name: issue.project.name.clone(),
                                     };
 
-                                    // emit 事件到前端
                                     let _ = app_handle.emit("new-issue", &event);
 
-                                    // 發送 OS 原生通知
-                                    let body = format!(
-                                        "#{} {}",
-                                        issue.id, issue.subject
-                                    );
-                                    let _ = app_handle
-                                        .notification()
-                                        .builder()
-                                        .title("新 Issue")
-                                        .body(&body)
-                                        .extra("issueId", issue.id)
-                                        .show();
-
-                                    // 顯示視窗（如果隱藏中）
-                                    if let Some(window) = app_handle.get_webview_window("main") {
-                                        let _ = window.show();
-                                    }
+                                    let body =
+                                        format!("#{} {}", issue.id, issue.subject);
+                                    send_notification(&app_handle, "新 Issue", &body, issue.id);
                                 }
                             }
-                            known_ids = current_ids;
+
+                            // Rebuild known_issues with current data
+                            known_issues.clear();
+                            for issue in &issues {
+                                let updated = issue.updated_on.clone().unwrap_or_default();
+                                known_issues.insert(issue.id, updated);
+                            }
                         }
                     }
                     Err(_) => {
-                        // 靜默忽略錯誤，等待下一次 polling
+                        // Silently ignore errors, wait for next poll
                     }
                 }
             }
@@ -88,4 +112,67 @@ pub fn start_polling(app_handle: AppHandle) {
             tokio::time::sleep(Duration::from_secs(POLL_INTERVAL_SECS)).await;
         }
     });
+}
+
+async fn check_new_comment(
+    client: &RedmineClient,
+    app_handle: &AppHandle,
+    issue_id: u64,
+    subject: &str,
+    project_name: &str,
+    current_user_id: Option<u64>,
+) {
+    let Ok(full_issue) = client.get_issue_journals(issue_id).await else {
+        return;
+    };
+
+    let Some(journals) = &full_issue.journals else {
+        return;
+    };
+
+    // Find the latest journal with notes (comment)
+    let latest_comment = journals
+        .iter()
+        .rev()
+        .find(|j| j.notes.as_ref().is_some_and(|n| !n.is_empty()));
+
+    let Some(comment) = latest_comment else {
+        return;
+    };
+
+    // Skip if the comment author is the current user
+    if let Some(uid) = current_user_id {
+        if comment.user.id == uid {
+            return;
+        }
+    }
+
+    let event = NewCommentEvent {
+        issue_id,
+        subject: subject.to_string(),
+        project_name: project_name.to_string(),
+        author_name: comment.user.name.clone(),
+    };
+
+    let _ = app_handle.emit("new-comment", &event);
+
+    let body = format!(
+        "{} 在 #{} {}",
+        comment.user.name, issue_id, subject
+    );
+    send_notification(app_handle, "新留言", &body, issue_id);
+}
+
+fn send_notification(app_handle: &AppHandle, title: &str, body: &str, issue_id: u64) {
+    let _ = app_handle
+        .notification()
+        .builder()
+        .title(title)
+        .body(body)
+        .extra("issueId", issue_id)
+        .show();
+
+    if let Some(window) = app_handle.get_webview_window("main") {
+        let _ = window.show();
+    }
 }

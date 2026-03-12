@@ -25,3 +25,4 @@ dist-ssr
 .claude/
 .spectra/
 openspec/.vector-search.db
+openspec/.vector-search.db*

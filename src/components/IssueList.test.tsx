@@ -19,6 +19,7 @@ const baseIssue: Issue = {
   due_date: null,
   estimated_hours: null,
   done_ratio: 0,
+  updated_on: null,
   journals: [],
   attachments: [],
   watchers: null,

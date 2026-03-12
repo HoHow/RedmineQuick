@@ -151,7 +151,9 @@ function Layout() {
                                 navigate(`/issues/${n.issueId}`);
                               }}
                             >
-                              <div className="notif-item-title">#{n.issueId} {n.subject}</div>
+                              <div className="notif-item-title">
+                                {n.type === "new-comment" ? `💬 ${n.authorName} 留言於` : "📋 新 Issue"} #{n.issueId} {n.subject}
+                              </div>
                               <div className="notif-item-meta">{n.projectName} · {formatNotifTime(n.createdAt)}</div>
                             </button>
                           ))}
