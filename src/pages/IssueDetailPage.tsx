@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
-import { getIssue, updateIssue, uploadAttachment, listStatuses, listPriorities, listTrackers, listMemberships, downloadAttachment, saveAttachment, type Issue, type IdName, type IssueParams, type Membership, type Attachment, type UploadInfo } from "../lib/api";
+import { getIssue, updateIssue, uploadAttachment, listStatuses, listPriorities, listTrackers, listMemberships, listChildIssues, downloadAttachment, saveAttachment, type Issue, type IdName, type IssueParams, type Membership, type Attachment, type UploadInfo } from "../lib/api";
 import IssueForm, { type PendingFile } from "../components/IssueForm";
 import NoteForm from "../components/NoteForm";
 
@@ -143,6 +143,30 @@ function ImageThumbnailCached({ attachment, onLoad }: { attachment: Attachment; 
   return <img className="attachment-thumb" src={src} alt={attachment.filename} />;
 }
 
+function ChildrenSection({ children, navigate }: { children: Issue[]; navigate: (path: string) => void }) {
+  if (children.length === 0) return null;
+
+  return (
+    <div className="detail-section">
+      <h3>子議題（{children.length}）</h3>
+      <div className="children-list">
+        {children.map((child) => (
+          <div
+            key={child.id}
+            className="children-row link"
+            onClick={() => navigate(`/issues/${child.id}`)}
+          >
+            <span className="children-tracker">{child.tracker.name} #{child.id}</span>
+            <span className="children-subject">{child.subject}</span>
+            <span className="children-status">{child.status.name}</span>
+            <span className="children-assignee">{child.assigned_to?.name ?? "—"}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function JournalSection({ issue, lookup, onQuote }: { issue: Issue; lookup: LookupMap; onQuote: (text: string) => void }) {
   const [tab, setTab] = useState<"all" | "notes" | "changes">("all");
 
@@ -225,27 +249,39 @@ function IssueDetailPage() {
   const [dueDateEditing, setDueDateEditing] = useState(false);
   const [updatedField, setUpdatedField] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [children, setChildren] = useState<Issue[]>([]);
   const [pendingQuote, setPendingQuote] = useState<string | undefined>(undefined);
   const noteFormRef = useRef<HTMLDivElement>(null);
 
   async function fetchIssue() {
     if (!issueId) return;
     try {
-      const [data, statusList, priorityList, trackerList] = await Promise.all([
+      const [data, statusList, priorityList, trackerList, childIssues] = await Promise.all([
         getIssue(Number(issueId)),
         listStatuses(),
         listPriorities(),
         listTrackers(),
+        listChildIssues(Number(issueId)),
       ]);
       setIssue(data);
+      setChildren(childIssues);
       setStatuses(statusList);
-      // memberships needs projectId from issue
       const memberList = await listMemberships(data.project.id);
       setLookup(buildLookup(statusList, priorityList, trackerList, memberList));
     } catch (e) {
       setError(String(e));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function refreshIssue() {
+    if (!issueId) return;
+    try {
+      const data = await getIssue(Number(issueId));
+      setIssue(data);
+    } catch (e) {
+      setError(String(e));
     }
   }
 
@@ -257,7 +293,7 @@ function IssueDetailPage() {
     if (!issueId) return;
     try {
       await updateIssue(Number(issueId), { status_id: statusId } as IssueParams);
-      await fetchIssue();
+      await refreshIssue();
       setUpdatedField("status");
       setTimeout(() => setUpdatedField(null), 2000);
     } catch (e) {
@@ -269,7 +305,7 @@ function IssueDetailPage() {
     if (!issueId) return;
     try {
       await updateIssue(Number(issueId), { due_date: dueDate || undefined } as IssueParams);
-      await fetchIssue();
+      await refreshIssue();
       setDueDateEditing(false);
       setUpdatedField("due_date");
       setTimeout(() => setUpdatedField(null), 2000);
@@ -461,12 +497,13 @@ function IssueDetailPage() {
           </div>
         )}
 
+        <ChildrenSection children={children} navigate={navigate} />
         <AttachmentSection issue={issue} />
         <JournalSection issue={issue} lookup={lookup} onQuote={handleQuote} />
         <div ref={noteFormRef}>
           <NoteForm
             issueId={issue.id}
-            onNoteAdded={fetchIssue}
+            onNoteAdded={refreshIssue}
             pendingQuote={pendingQuote}
             onQuoteConsumed={() => setPendingQuote(undefined)}
           />

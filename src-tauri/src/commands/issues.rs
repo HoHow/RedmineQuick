@@ -35,6 +35,12 @@ pub async fn search_issues(app: AppHandle, query: String, project_id: Option<u64
 }
 
 #[tauri::command]
+pub async fn list_child_issues(app: AppHandle, issue_id: u64) -> Result<Vec<Issue>, String> {
+    let client = get_client(&app)?;
+    client.list_child_issues(issue_id).await
+}
+
+#[tauri::command]
 pub async fn get_issue(app: AppHandle, issue_id: u64) -> Result<Issue, String> {
     let client = get_client(&app)?;
     client.get_issue(issue_id).await

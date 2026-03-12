@@ -182,6 +182,11 @@ impl RedmineClient {
         Ok(resp.issues)
     }
 
+    pub async fn list_child_issues(&self, parent_id: u64) -> Result<Vec<Issue>, String> {
+        let id_str = parent_id.to_string();
+        self.list_issues(&[("parent_id", &id_str)]).await
+    }
+
     pub async fn search_issues(
         &self,
         query: &str,
@@ -201,6 +206,12 @@ impl RedmineClient {
 
     pub async fn get_issue(&self, id: u64) -> Result<Issue, String> {
         let path = format!("/issues/{}.json?include=watchers,journals,attachments", id);
+        let resp: IssueResponse = self.get(&path).await?;
+        Ok(resp.issue)
+    }
+
+    pub async fn get_issue_journals(&self, id: u64) -> Result<Issue, String> {
+        let path = format!("/issues/{}.json?include=journals", id);
         let resp: IssueResponse = self.get(&path).await?;
         Ok(resp.issue)
     }

@@ -61,6 +61,7 @@ export interface Issue {
   due_date: string | null;
   estimated_hours: number | null;
   done_ratio: number;
+  updated_on: string | null;
   watchers: IdName[] | null;
   journals: Journal[] | null;
   attachments: Attachment[] | null;
@@ -143,6 +144,10 @@ export function listProjectIssues(projectId: number, status: string = "open"): P
 
 export function searchIssues(query: string, projectId?: number): Promise<Issue[]> {
   return invoke("search_issues", { query, projectId });
+}
+
+export function listChildIssues(issueId: number): Promise<Issue[]> {
+  return invoke("list_child_issues", { issueId });
 }
 
 export function getIssue(issueId: number): Promise<Issue> {
