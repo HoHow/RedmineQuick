@@ -47,6 +47,18 @@ pub async fn list_related_issues(app: AppHandle, issue_id: u64) -> Result<Vec<Re
 }
 
 #[tauri::command]
+pub async fn add_watcher(app: AppHandle, issue_id: u64, user_id: u64) -> Result<(), String> {
+    let client = get_client(&app)?;
+    client.add_watcher(issue_id, user_id).await
+}
+
+#[tauri::command]
+pub async fn remove_watcher(app: AppHandle, issue_id: u64, user_id: u64) -> Result<(), String> {
+    let client = get_client(&app)?;
+    client.remove_watcher(issue_id, user_id).await
+}
+
+#[tauri::command]
 pub async fn get_issue(app: AppHandle, issue_id: u64) -> Result<Issue, String> {
     let client = get_client(&app)?;
     client.get_issue(issue_id).await

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
-import { getIssue, updateIssue, uploadAttachment, listStatuses, listPriorities, listTrackers, listMemberships, listChildIssues, listRelatedIssues, downloadAttachment, saveAttachment, type Issue, type IdName, type IssueParams, type Membership, type Attachment, type UploadInfo, type RelatedIssue } from "../lib/api";
+import { getIssue, updateIssue, uploadAttachment, listStatuses, listPriorities, listTrackers, listMemberships, listChildIssues, listRelatedIssues, addWatcher, removeWatcher, downloadAttachment, saveAttachment, type Issue, type IdName, type IssueParams, type Membership, type Attachment, type UploadInfo, type RelatedIssue } from "../lib/api";
 import IssueForm, { type PendingFile } from "../components/IssueForm";
 import NoteForm from "../components/NoteForm";
+import { useApp } from "../contexts/AppContext";
 
 const FIELD_LABELS: Record<string, string> = {
   status_id: "狀態",
@@ -277,6 +278,7 @@ function JournalSection({ issue, lookup, onQuote }: { issue: Issue; lookup: Look
 function IssueDetailPage() {
   const { issueId } = useParams();
   const navigate = useNavigate();
+  const { user } = useApp();
   const [issue, setIssue] = useState<Issue | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -289,7 +291,27 @@ function IssueDetailPage() {
   const [children, setChildren] = useState<Issue[]>([]);
   const [relations, setRelations] = useState<RelatedIssue[]>([]);
   const [pendingQuote, setPendingQuote] = useState<string | undefined>(undefined);
+  const [watchLoading, setWatchLoading] = useState(false);
   const noteFormRef = useRef<HTMLDivElement>(null);
+
+  const isWatching = user ? (issue?.watchers ?? []).some((w) => w.id === user.id) : false;
+
+  async function handleToggleWatch() {
+    if (!issueId || !user) return;
+    setWatchLoading(true);
+    try {
+      if (isWatching) {
+        await removeWatcher(Number(issueId), user.id);
+      } else {
+        await addWatcher(Number(issueId), user.id);
+      }
+      await refreshIssue();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setWatchLoading(false);
+    }
+  }
 
   async function fetchIssue() {
     if (!issueId) return;
@@ -428,6 +450,9 @@ function IssueDetailPage() {
           {issue.tracker.name} #{issue.id}: {issue.subject}
         </h2>
         <div className="header-actions">
+          <button onClick={handleToggleWatch} disabled={watchLoading}>
+            {watchLoading ? "處理中..." : isWatching ? "取消追蹤" : "追蹤"}
+          </button>
           <button onClick={() => navigate(`/issues/${issue.id}/time-entry`)}>
             記錄工時
           </button>

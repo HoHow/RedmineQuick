@@ -169,6 +169,50 @@ impl RedmineClient {
         Ok(())
     }
 
+    pub async fn post_empty<B: Serialize>(&self, path: &str, body: &B) -> Result<(), String> {
+        let url = format!("{}{}", self.base_url, path);
+        let response = self
+            .http
+            .post(&url)
+            .header("X-Redmine-API-Key", &self.api_key)
+            .header("Content-Type", "application/json")
+            .json(body)
+            .send()
+            .await
+            .map_err(|e| format!("連線失敗：{}", e))?;
+
+        check_response(&response)?;
+
+        if !response.status().is_success() {
+            let status = response.status().as_u16();
+            let body = response.text().await.unwrap_or_default();
+            return Err(format!("API 錯誤 ({}): {}", status, body));
+        }
+
+        Ok(())
+    }
+
+    pub async fn delete(&self, path: &str) -> Result<(), String> {
+        let url = format!("{}{}", self.base_url, path);
+        let response = self
+            .http
+            .delete(&url)
+            .header("X-Redmine-API-Key", &self.api_key)
+            .send()
+            .await
+            .map_err(|e| format!("連線失敗：{}", e))?;
+
+        check_response(&response)?;
+
+        if !response.status().is_success() {
+            let status = response.status().as_u16();
+            let body = response.text().await.unwrap_or_default();
+            return Err(format!("API 錯誤 ({}): {}", status, body));
+        }
+
+        Ok(())
+    }
+
     // 2.3: get_current_user
     pub async fn get_current_user(&self) -> Result<User, String> {
         let resp: CurrentUserResponse = self.get("/users/current.json").await?;
@@ -263,6 +307,17 @@ impl RedmineClient {
         let path = format!("/issues/{}.json?include=journals", id);
         let resp: IssueResponse = self.get(&path).await?;
         Ok(resp.issue)
+    }
+
+    pub async fn add_watcher(&self, issue_id: u64, user_id: u64) -> Result<(), String> {
+        let path = format!("/issues/{}/watchers.json", issue_id);
+        self.post_empty(&path, &serde_json::json!({ "user_id": user_id }))
+            .await
+    }
+
+    pub async fn remove_watcher(&self, issue_id: u64, user_id: u64) -> Result<(), String> {
+        let path = format!("/issues/{}/watchers/{}.json", issue_id, user_id);
+        self.delete(&path).await
     }
 
     pub async fn create_issue(&self, params: IssueParams) -> Result<Issue, String> {

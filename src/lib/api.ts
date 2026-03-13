@@ -163,6 +163,14 @@ export function listChildIssues(issueId: number): Promise<Issue[]> {
   return invoke("list_child_issues", { issueId });
 }
 
+export function addWatcher(issueId: number, userId: number): Promise<void> {
+  return invoke("add_watcher", { issueId, userId });
+}
+
+export function removeWatcher(issueId: number, userId: number): Promise<void> {
+  return invoke("remove_watcher", { issueId, userId });
+}
+
 export function getIssue(issueId: number): Promise<Issue> {
   return invoke("get_issue", { issueId });
 }
