@@ -24,6 +24,7 @@ pub fn run() {
             commands::issues::list_project_issues,
             commands::issues::search_issues,
             commands::issues::list_child_issues,
+            commands::issues::list_related_issues,
             commands::issues::get_issue,
             commands::issues::create_issue,
             commands::issues::update_issue,

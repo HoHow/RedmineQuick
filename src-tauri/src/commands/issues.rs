@@ -3,7 +3,7 @@ use tauri_plugin_dialog::DialogExt;
 
 use crate::config;
 use crate::redmine::client::RedmineClient;
-use crate::redmine::models::{FileMetadata, IdName, Issue, IssueParams, Membership, UploadInfo};
+use crate::redmine::models::{FileMetadata, IdName, Issue, IssueParams, Membership, RelatedIssue, UploadInfo};
 
 fn get_client(app: &AppHandle) -> Result<RedmineClient, String> {
     let cfg = config::load_config(app)?
@@ -38,6 +38,12 @@ pub async fn search_issues(app: AppHandle, query: String, project_id: Option<u64
 pub async fn list_child_issues(app: AppHandle, issue_id: u64) -> Result<Vec<Issue>, String> {
     let client = get_client(&app)?;
     client.list_child_issues(issue_id).await
+}
+
+#[tauri::command]
+pub async fn list_related_issues(app: AppHandle, issue_id: u64) -> Result<Vec<RelatedIssue>, String> {
+    let client = get_client(&app)?;
+    client.list_related_issues(issue_id).await
 }
 
 #[tauri::command]

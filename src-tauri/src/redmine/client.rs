@@ -33,6 +33,20 @@ fn check_response(response: &reqwest::Response) -> Result<(), String> {
     Ok(())
 }
 
+fn invert_relation_type(relation_type: &str) -> String {
+    match relation_type {
+        "duplicates" => "duplicated".to_string(),
+        "duplicated" => "duplicates".to_string(),
+        "blocks" => "blocked".to_string(),
+        "blocked" => "blocks".to_string(),
+        "precedes" => "follows".to_string(),
+        "follows" => "precedes".to_string(),
+        "copied_to" => "copied_from".to_string(),
+        "copied_from" => "copied_to".to_string(),
+        other => other.to_string(),
+    }
+}
+
 impl RedmineClient {
     pub fn new(base_url: &str, api_key: &str) -> Self {
         let base_url = base_url.trim_end_matches('/').to_string();
@@ -185,6 +199,41 @@ impl RedmineClient {
     pub async fn list_child_issues(&self, parent_id: u64) -> Result<Vec<Issue>, String> {
         let id_str = parent_id.to_string();
         self.list_issues(&[("parent_id", &id_str)]).await
+    }
+
+    pub async fn get_issue_basic(&self, id: u64) -> Result<Issue, String> {
+        let path = format!("/issues/{}.json", id);
+        let resp: IssueResponse = self.get(&path).await?;
+        Ok(resp.issue)
+    }
+
+    pub async fn list_related_issues(&self, issue_id: u64) -> Result<Vec<RelatedIssue>, String> {
+        let path = format!("/issues/{}.json?include=relations", issue_id);
+        let resp: IssueResponse = self.get(&path).await?;
+        let relations = resp.issue.relations.unwrap_or_default();
+
+        let mut result = Vec::new();
+        for rel in relations {
+            let (related_id, corrected_type) = if rel.issue_id == issue_id {
+                (rel.issue_to_id, rel.relation_type.clone())
+            } else {
+                (rel.issue_id, invert_relation_type(&rel.relation_type))
+            };
+            match self.get_issue_basic(related_id).await {
+                Ok(issue) => {
+                    result.push(RelatedIssue {
+                        relation_type: corrected_type,
+                        issue_id: related_id,
+                        subject: issue.subject,
+                        tracker: issue.tracker,
+                        status: issue.status,
+                        assigned_to: issue.assigned_to,
+                    });
+                }
+                Err(_) => continue,
+            }
+        }
+        Ok(result)
     }
 
     pub async fn search_issues(

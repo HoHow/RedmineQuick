@@ -687,6 +687,64 @@ button:disabled {
   white-space: nowrap;
 }
 
+.relations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.relations-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.relations-row:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.relations-type {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  width: 60px;
+}
+
+.relations-tracker {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.relations-subject {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.relations-status {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.relations-assignee {
+  color: var(--color-text-tertiary);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  width: 80px;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .journal-list {
   display: flex;
   flex-direction: column;

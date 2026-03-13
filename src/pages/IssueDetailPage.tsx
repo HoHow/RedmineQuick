@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
-import { getIssue, updateIssue, uploadAttachment, listStatuses, listPriorities, listTrackers, listMemberships, listChildIssues, downloadAttachment, saveAttachment, type Issue, type IdName, type IssueParams, type Membership, type Attachment, type UploadInfo } from "../lib/api";
+import { getIssue, updateIssue, uploadAttachment, listStatuses, listPriorities, listTrackers, listMemberships, listChildIssues, listRelatedIssues, downloadAttachment, saveAttachment, type Issue, type IdName, type IssueParams, type Membership, type Attachment, type UploadInfo, type RelatedIssue } from "../lib/api";
 import IssueForm, { type PendingFile } from "../components/IssueForm";
 import NoteForm from "../components/NoteForm";
 
@@ -15,6 +15,18 @@ const FIELD_LABELS: Record<string, string> = {
   subject: "主旨",
   description: "概述",
   estimated_hours: "預估工時",
+};
+
+const RELATION_TYPE_LABELS: Record<string, string> = {
+  relates: "關聯",
+  duplicates: "重複",
+  duplicated: "被重複",
+  blocks: "阻擋",
+  blocked: "被阻擋",
+  precedes: "在前",
+  follows: "在後",
+  copied_to: "複製到",
+  copied_from: "從…複製",
 };
 
 type LookupMap = Record<string, Record<string, string>>;
@@ -167,6 +179,31 @@ function ChildrenSection({ children, navigate }: { children: Issue[]; navigate: 
   );
 }
 
+function RelationsSection({ relations, navigate }: { relations: RelatedIssue[]; navigate: (path: string) => void }) {
+  if (relations.length === 0) return null;
+
+  return (
+    <div className="detail-section">
+      <h3>相關議題（{relations.length}）</h3>
+      <div className="relations-list">
+        {relations.map((rel) => (
+          <div
+            key={`${rel.relation_type}-${rel.issue_id}`}
+            className="relations-row link"
+            onClick={() => navigate(`/issues/${rel.issue_id}`)}
+          >
+            <span className="relations-type">{RELATION_TYPE_LABELS[rel.relation_type] ?? rel.relation_type}</span>
+            <span className="relations-tracker">{rel.tracker.name} #{rel.issue_id}</span>
+            <span className="relations-subject">{rel.subject}</span>
+            <span className="relations-status">{rel.status.name}</span>
+            <span className="relations-assignee">{rel.assigned_to?.name ?? "—"}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function JournalSection({ issue, lookup, onQuote }: { issue: Issue; lookup: LookupMap; onQuote: (text: string) => void }) {
   const [tab, setTab] = useState<"all" | "notes" | "changes">("all");
 
@@ -250,21 +287,24 @@ function IssueDetailPage() {
   const [updatedField, setUpdatedField] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [children, setChildren] = useState<Issue[]>([]);
+  const [relations, setRelations] = useState<RelatedIssue[]>([]);
   const [pendingQuote, setPendingQuote] = useState<string | undefined>(undefined);
   const noteFormRef = useRef<HTMLDivElement>(null);
 
   async function fetchIssue() {
     if (!issueId) return;
     try {
-      const [data, statusList, priorityList, trackerList, childIssues] = await Promise.all([
+      const [data, statusList, priorityList, trackerList, childIssues, relatedIssues] = await Promise.all([
         getIssue(Number(issueId)),
         listStatuses(),
         listPriorities(),
         listTrackers(),
         listChildIssues(Number(issueId)),
+        listRelatedIssues(Number(issueId)),
       ]);
       setIssue(data);
       setChildren(childIssues);
+      setRelations(relatedIssues);
       setStatuses(statusList);
       const memberList = await listMemberships(data.project.id);
       setLookup(buildLookup(statusList, priorityList, trackerList, memberList));
@@ -498,6 +538,7 @@ function IssueDetailPage() {
         )}
 
         <ChildrenSection children={children} navigate={navigate} />
+        <RelationsSection relations={relations} navigate={navigate} />
         <AttachmentSection issue={issue} />
         <JournalSection issue={issue} lookup={lookup} onQuote={handleQuote} />
         <div ref={noteFormRef}>

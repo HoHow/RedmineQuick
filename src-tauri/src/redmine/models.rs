@@ -69,6 +69,7 @@ pub struct Issue {
     pub watchers: Option<Vec<IdName>>,
     pub journals: Option<Vec<Journal>>,
     pub attachments: Option<Vec<Attachment>>,
+    pub relations: Option<Vec<Relation>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,6 +105,27 @@ pub struct Attachment {
     pub content_url: String,
     pub author: IdName,
     pub created_on: String,
+}
+
+// Relation (issue relations)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Relation {
+    pub id: u64,
+    pub issue_id: u64,
+    pub issue_to_id: u64,
+    pub relation_type: String,
+    pub delay: Option<i32>,
+}
+
+// Enriched relation returned to frontend
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RelatedIssue {
+    pub relation_type: String,
+    pub issue_id: u64,
+    pub subject: String,
+    pub tracker: IdName,
+    pub status: IdName,
+    pub assigned_to: Option<IdName>,
 }
 
 // POST /issues.json, PUT /issues/<id>.json

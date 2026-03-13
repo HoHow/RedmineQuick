@@ -146,6 +146,19 @@ export function searchIssues(query: string, projectId?: number): Promise<Issue[]
   return invoke("search_issues", { query, projectId });
 }
 
+export interface RelatedIssue {
+  relation_type: string;
+  issue_id: number;
+  subject: string;
+  tracker: IdName;
+  status: IdName;
+  assigned_to: IdName | null;
+}
+
+export function listRelatedIssues(issueId: number): Promise<RelatedIssue[]> {
+  return invoke("list_related_issues", { issueId });
+}
+
 export function listChildIssues(issueId: number): Promise<Issue[]> {
   return invoke("list_child_issues", { issueId });
 }
