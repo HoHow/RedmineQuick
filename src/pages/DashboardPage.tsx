@@ -3,6 +3,53 @@ import { useNavigate } from "react-router";
 import { listProjects, listMyIssues, listStatuses, listPriorities, updateIssue, type Project, type Issue, type IdName } from "../lib/api";
 import IssueList from "../components/IssueList";
 
+function getMonday(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function StatsCards({ issues }: { issues: Issue[] }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().slice(0, 10);
+
+  const monday = getMonday(today);
+  const sunday = new Date(monday);
+  sunday.setDate(sunday.getDate() + 6);
+  const mondayStr = monday.toISOString().slice(0, 10);
+  const sundayStr = sunday.toISOString().slice(0, 10);
+
+  const total = issues.length;
+  const overdue = issues.filter((i) => i.due_date != null && i.due_date < todayStr).length;
+  const dueThisWeek = issues.filter((i) => i.due_date != null && i.due_date >= mondayStr && i.due_date <= sundayStr).length;
+  const highPriority = issues.filter((i) => i.priority.id >= 4).length;
+
+  return (
+    <div className="stats-cards">
+      <div className="stat-card">
+        <span className="stat-label">待處理</span>
+        <span className="stat-value">{total}</span>
+      </div>
+      <div className="stat-card">
+        <span className="stat-label">逾期</span>
+        <span className={`stat-value${overdue > 0 ? " stat-danger" : ""}`}>{overdue}</span>
+      </div>
+      <div className="stat-card">
+        <span className="stat-label">本週到期</span>
+        <span className="stat-value">{dueThisWeek}</span>
+      </div>
+      <div className="stat-card">
+        <span className="stat-label">高優先</span>
+        <span className="stat-value">{highPriority}</span>
+      </div>
+    </div>
+  );
+}
+
 function DashboardPage() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -106,6 +153,7 @@ function DashboardPage() {
 
         <section className="panel">
           <h2>我的 Issue</h2>
+          {tab === "open" && !issuesLoading && <StatsCards issues={myIssues} />}
           <div className="tab-group">
             <button
               className={`tab-button ${tab === "open" ? "active" : ""}`}
