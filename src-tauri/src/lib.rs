@@ -23,6 +23,7 @@ pub fn run() {
             commands::issues::list_my_issues,
             commands::issues::list_project_issues,
             commands::issues::search_issues,
+            commands::issues::list_watched_issues,
             commands::issues::list_child_issues,
             commands::issues::list_related_issues,
             commands::issues::add_watcher,

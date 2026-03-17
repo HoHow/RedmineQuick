@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { listProjects, listMyIssues, listStatuses, listPriorities, updateIssue, type Project, type Issue, type IdName } from "../lib/api";
+import { listProjects, listMyIssues, listWatchedIssues, listStatuses, listPriorities, updateIssue, type Project, type Issue, type IdName } from "../lib/api";
 import IssueList from "../components/IssueList";
 
 function getMonday(date: Date): Date {
@@ -59,7 +59,7 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [issuesLoading, setIssuesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"open" | "closed">("open");
+  const [tab, setTab] = useState<"open" | "closed" | "watched">("open");
 
   useEffect(() => {
     async function fetchData() {
@@ -86,7 +86,8 @@ function DashboardPage() {
   useEffect(() => {
     if (loading) return;
     setIssuesLoading(true);
-    listMyIssues(tab)
+    const fetcher = tab === "watched" ? listWatchedIssues() : listMyIssues(tab);
+    fetcher
       .then(setMyIssues)
       .catch((e) => setError(String(e)))
       .finally(() => setIssuesLoading(false));
@@ -99,7 +100,7 @@ function DashboardPage() {
     );
     try {
       await updateIssue(issueId, { status_id: statusId });
-      const updated = await listMyIssues(tab);
+      const updated = tab === "watched" ? await listWatchedIssues() : await listMyIssues(tab);
       setMyIssues(updated);
     } catch (e) {
       setMyIssues(original);
@@ -167,12 +168,18 @@ function DashboardPage() {
             >
               已完成
             </button>
+            <button
+              className={`tab-button ${tab === "watched" ? "active" : ""}`}
+              onClick={() => setTab("watched")}
+            >
+              追蹤中
+            </button>
           </div>
           {issuesLoading ? (
             <div className="loading">載入中...</div>
           ) : myIssues.length === 0 ? (
             <p className="empty-state">
-              {tab === "open" ? "目前沒有待處理的 Issue" : "目前沒有已完成的 Issue"}
+              {tab === "open" ? "目前沒有待處理的 Issue" : tab === "closed" ? "目前沒有已完成的 Issue" : "目前沒有追蹤中的 Issue"}
             </p>
           ) : (
             <IssueList issues={myIssues} showProject statuses={statuses} onStatusChange={handleStatusChange} priorities={priorities} onPriorityChange={handlePriorityChange} />

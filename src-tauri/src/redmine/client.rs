@@ -245,6 +245,10 @@ impl RedmineClient {
         self.list_issues(&[("parent_id", &id_str)]).await
     }
 
+    pub async fn list_watched_issues(&self) -> Result<Vec<Issue>, String> {
+        self.list_issues(&[("watcher_id", "me")]).await
+    }
+
     pub async fn get_issue_basic(&self, id: u64) -> Result<Issue, String> {
         let path = format!("/issues/{}.json", id);
         let resp: IssueResponse = self.get(&path).await?;
