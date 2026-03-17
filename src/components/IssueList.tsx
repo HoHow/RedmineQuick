@@ -1,6 +1,44 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router";
 import type { Issue, IdName } from "../lib/api";
+
+type SortKey = "id" | "priority" | "status" | "updated_on";
+type SortDir = "asc" | "desc";
+
+function formatRelativeTime(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "剛剛";
+  if (minutes < 60) return `${minutes}分鐘前`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}小時前`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}天前`;
+  const months = Math.floor(days / 30);
+  return `${months}個月前`;
+}
+
+function compareFn(a: Issue, b: Issue, key: SortKey, dir: SortDir): number {
+  let cmp = 0;
+  switch (key) {
+    case "id":
+      cmp = a.id - b.id;
+      break;
+    case "priority":
+      cmp = a.priority.id - b.priority.id;
+      break;
+    case "status":
+      cmp = a.status.name.localeCompare(b.status.name);
+      break;
+    case "updated_on":
+      cmp = (a.updated_on ?? "").localeCompare(b.updated_on ?? "");
+      break;
+  }
+  return dir === "asc" ? cmp : -cmp;
+}
 
 interface IssueListProps {
   issues: Issue[];
@@ -16,6 +54,27 @@ interface IssueListProps {
 function IssueList({ issues, showProject = false, showAuthor = false, showAssignee = false, statuses, onStatusChange, priorities, onPriorityChange }: IssueListProps) {
   const navigate = useNavigate();
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("id");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const sortedIssues = useMemo(
+    () => [...issues].sort((a, b) => compareFn(a, b, sortKey, sortDir)),
+    [issues, sortKey, sortDir],
+  );
+
+  function handleSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  function sortIndicator(key: SortKey): string {
+    if (key !== sortKey) return "";
+    return sortDir === "asc" ? " ▲" : " ▼";
+  }
 
   async function handleStatusChange(issue: Issue, newStatusId: number) {
     if (!onStatusChange || newStatusId === issue.status.id) return;
@@ -41,17 +100,18 @@ function IssueList({ issues, showProject = false, showAuthor = false, showAssign
     <table className="issue-table">
       <thead>
         <tr>
-          <th>#</th>
+          <th className="sortable-header" onClick={() => handleSort("id")}>#{sortIndicator("id")}</th>
           {showProject && <th>專案</th>}
           <th>主旨</th>
           {showAuthor && <th>建立者</th>}
           {showAssignee && <th>被分派者</th>}
-          <th>狀態</th>
-          <th>優先權</th>
+          <th className="sortable-header" onClick={() => handleSort("status")}>狀態{sortIndicator("status")}</th>
+          <th className="sortable-header" onClick={() => handleSort("priority")}>優先權{sortIndicator("priority")}</th>
+          <th className="sortable-header" onClick={() => handleSort("updated_on")}>更新{sortIndicator("updated_on")}</th>
         </tr>
       </thead>
       <tbody>
-        {issues.map((issue) => (
+        {sortedIssues.map((issue) => (
           <tr
             key={issue.id}
             className="issue-row"
@@ -96,6 +156,7 @@ function IssueList({ issues, showProject = false, showAuthor = false, showAssign
                 issue.priority.name
               )}
             </td>
+            <td className="issue-updated">{formatRelativeTime(issue.updated_on)}</td>
           </tr>
         ))}
       </tbody>

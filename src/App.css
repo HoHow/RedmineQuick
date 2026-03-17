@@ -213,6 +213,14 @@
   font-size: 0.875rem;
 }
 
+.search-recent-header {
+  padding: 8px 12px 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+}
+
 .search-results {
   list-style: none;
   margin: 0;
@@ -596,6 +604,22 @@ button:disabled {
 
 .issue-subject {
   font-weight: 500;
+}
+
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable-header:hover {
+  color: var(--color-text);
+}
+
+.issue-updated {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 /* Issue detail */
