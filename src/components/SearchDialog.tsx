@@ -19,6 +19,20 @@ function toResult(issue: Issue): SearchResult {
   };
 }
 
+interface RecentEntry {
+  id: number;
+  subject: string;
+  projectName: string;
+}
+
+function loadRecentIssues(): RecentEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem("recent-issues") ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
 function SearchDialog() {
   const { isOpen, close } = useSearch();
   const navigate = useNavigate();
@@ -27,6 +41,7 @@ function SearchDialog() {
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [recentIssues, setRecentIssues] = useState<RecentEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -40,6 +55,7 @@ function SearchDialog() {
       setResults([]);
       setError(null);
       setSelectedIndex(0);
+      setRecentIssues(loadRecentIssues());
       setTimeout(() => inputRef.current?.focus(), 0);
     }
   }, [isOpen]);
@@ -123,17 +139,23 @@ function SearchDialog() {
     navigate(`/issues/${result.id}`);
   }
 
+  const showRecent = !query.trim() && recentIssues.length > 0 && !loading;
+  const navLength = showRecent ? recentIssues.length : results.length;
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Escape") {
       close();
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex((prev) => (results.length > 0 ? (prev + 1) % results.length : 0));
+      setSelectedIndex((prev) => (navLength > 0 ? (prev + 1) % navLength : 0));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelectedIndex((prev) => (results.length > 0 ? (prev - 1 + results.length) % results.length : 0));
+      setSelectedIndex((prev) => (navLength > 0 ? (prev - 1 + navLength) % navLength : 0));
     } else if (e.key === "Enter") {
-      if (results.length > 0 && results[selectedIndex]) {
+      if (showRecent && recentIssues[selectedIndex]) {
+        close();
+        navigate(`/issues/${recentIssues[selectedIndex].id}`);
+      } else if (results.length > 0 && results[selectedIndex]) {
         selectResult(results[selectedIndex]);
       } else {
         handleSearch();
@@ -163,6 +185,25 @@ function SearchDialog() {
         </div>
         {loading && <div className="search-loading">搜尋中...</div>}
         {error && !loading && <div className="search-empty">{error}</div>}
+        {showRecent && (
+          <div className="search-recent">
+            <div className="search-recent-header">最近瀏覽</div>
+            <ul className="search-results">
+              {recentIssues.map((entry, index) => (
+                <li
+                  key={entry.id}
+                  className={`search-result-item ${index === selectedIndex ? "selected" : ""}`}
+                  onClick={() => { close(); navigate(`/issues/${entry.id}`); }}
+                  onMouseEnter={() => setSelectedIndex(index)}
+                >
+                  <span className="search-result-id">#{entry.id}</span>
+                  <span className="search-result-subject">{entry.subject}</span>
+                  <span className="search-result-meta">{entry.projectName}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {results.length > 0 && !loading && (
           <ul className="search-results">
             {results.map((result, index) => (

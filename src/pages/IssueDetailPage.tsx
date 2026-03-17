@@ -328,6 +328,14 @@ function IssueDetailPage() {
       setChildren(childIssues);
       setRelations(relatedIssues);
       setStatuses(statusList);
+
+      try {
+        const entry = { id: data.id, subject: data.subject, projectName: data.project.name };
+        const stored = JSON.parse(localStorage.getItem("recent-issues") ?? "[]") as typeof entry[];
+        const filtered = stored.filter((e) => e.id !== data.id);
+        filtered.unshift(entry);
+        localStorage.setItem("recent-issues", JSON.stringify(filtered.slice(0, 10)));
+      } catch { /* ignore localStorage errors */ }
       const memberList = await listMemberships(data.project.id);
       setLookup(buildLookup(statusList, priorityList, trackerList, memberList));
     } catch (e) {
