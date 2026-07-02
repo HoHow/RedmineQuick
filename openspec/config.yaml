@@ -1,5 +1,4 @@
 schema: spec-driven
-locale: tw
 
 context: |
   Tech stack: Tauri 2, React 19, TypeScript (strict), Rust (2021 edition)
