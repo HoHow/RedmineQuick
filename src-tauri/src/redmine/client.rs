@@ -21,13 +21,24 @@ fn check_response(response: &reqwest::Response) -> Result<(), String> {
         return Err("認證失敗：伺服器重新導向，請確認 API Key 是否正確".to_string());
     }
     if status.is_success() {
-        let content_type = response
-            .headers()
-            .get("content-type")
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("");
-        if !content_type.contains("json") {
-            return Err("認證失敗：伺服器回傳非 JSON 回應，請確認 URL 與 API Key 是否正確".to_string());
+        // Bodyless success responses (e.g. 204 from PUT/DELETE) carry no
+        // Content-Type, so the JSON check only applies when a body exists
+        let has_body = status.as_u16() != 204
+            && response
+                .headers()
+                .get("content-length")
+                .and_then(|v| v.to_str().ok())
+                .map(|len| len != "0")
+                .unwrap_or(true);
+        if has_body {
+            let content_type = response
+                .headers()
+                .get("content-type")
+                .and_then(|v| v.to_str().ok())
+                .unwrap_or("");
+            if !content_type.contains("json") {
+                return Err("認證失敗：伺服器回傳非 JSON 回應，請確認 URL 與 API Key 是否正確".to_string());
+            }
         }
     }
     Ok(())
@@ -487,6 +498,23 @@ mod tests {
             .unwrap();
 
         assert_eq!(token, "abc123.456");
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn update_issue_accepts_204_no_content() {
+        let mut server = mockito::Server::new_async().await;
+        let mock = server
+            .mock("PUT", "/issues/1.json")
+            .match_header("X-Redmine-API-Key", "test-key")
+            .with_status(204)
+            .create_async()
+            .await;
+
+        let client = RedmineClient::new(&server.url(), "test-key");
+        let result = client.update_issue(1, IssueParams::default()).await;
+
+        assert!(result.is_ok(), "expected Ok, got {:?}", result);
         mock.assert_async().await;
     }
 

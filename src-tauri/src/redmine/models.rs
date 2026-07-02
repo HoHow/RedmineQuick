@@ -134,7 +134,7 @@ pub struct IssuePayload {
     pub issue: IssueParams,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct IssueParams {
     #[serde(skip_serializing_if = "Option::is_none")]
