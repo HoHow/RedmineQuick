@@ -47,8 +47,17 @@
 }
 
 /* Layout */
+/* Document must never scroll: on macOS 26 the webview slides under the
+   translucent titlebar when the top-level page scrolls, covering the
+   window title. Scrolling happens inside .main-content instead. */
+html,
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
 .layout {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -283,7 +292,9 @@
 
 .main-content {
   flex: 1;
+  min-height: 0;
   padding: 1rem;
+  overflow-y: auto;
 }
 
 /* Common */

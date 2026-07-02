@@ -179,7 +179,7 @@ function IssueForm({ projectId, initialValues, onSubmit, onSubmitContinue, onCan
         setDoneRatio(0);
         setNotes("");
         setPendingFiles([]);
-        window.scrollTo(0, 0);
+        document.querySelector(".main-content")?.scrollTo(0, 0);
       } else {
         await onSubmit(params, pendingFiles);
       }
