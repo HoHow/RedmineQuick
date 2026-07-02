@@ -26,7 +26,6 @@ pub struct User {
 #[derive(Debug, Clone, Deserialize)]
 pub struct ProjectsResponse {
     pub projects: Vec<Project>,
-    pub total_count: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,7 +40,6 @@ pub struct Project {
 #[derive(Debug, Clone, Deserialize)]
 pub struct IssuesResponse {
     pub issues: Vec<Issue>,
-    pub total_count: u64,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -242,7 +240,6 @@ pub struct ActivitiesResponse {
 #[derive(Debug, Clone, Deserialize)]
 pub struct MembershipsResponse {
     pub memberships: Vec<Membership>,
-    pub total_count: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
